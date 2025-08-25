@@ -1,3 +1,7 @@
+# 2025-08-25
+
+First page has been successfully deployed
+
 # Hello World!
 
 This is my newest-and-soon-to-be-consolidated git. Will decommission the others
