@@ -45,7 +45,7 @@ jobs:
           # api_location: ${{ env.API_LOCATION }}
           # app_artifact_location: ${{ env.APP_ARTIFACT_LOCATION }}
           ###### End of Repository/Build Configurations ######
-  create_pr_to_staging:
+  create_pr_to_staging: # let's hope it works now
     needs: build_and_deploy_job
     permissions:
       contents: write
