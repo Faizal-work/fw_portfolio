@@ -48,44 +48,26 @@ jobs:
   create_pr_to_staging:
     needs: build_and_deploy_job
     permissions:
-      contents: write # for creating PR
-      pull-requests: write # for creating PR
+      contents: write
+      pull-requests: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && success()
     runs-on: ubuntu-latest
     name: Create PR to Staging
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for all branches
+          fetch-depth: 0
 
-      - name: Create Pull Request
-        id: create-pr
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Auto PR: Deploy develop to staging"
-          body: |
-            ## Automated Pull Request
-
-            This PR was automatically created after a successful deployment to the develop environment.
-
-            ### Changes
-            - Latest changes from develop branch
-            - Deployment to develop environment completed successfully
-
-            ### Next Steps
-            - Review the changes
-            - Test in staging environment after merge
-            - Create PR to main when ready for production
-
-            **Commit SHA:** ${{ github.sha }}
-            **Run ID:** ${{ github.run_id }}
-            **Run Number:** ${{ github.run_number }}
-          labels: |
-            automated
-            deployment
-            staging
-          draft: false
+      - name: Create Pull Request from develop to staging
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base staging \
+            --head develop \
+            --title "Auto PR: Deploy develop to staging" \
+            --body "Automated PR created after successful deployment to develop environment"
   close_pull_request_job:
     permissions:
       contents: none
