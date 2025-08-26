@@ -1,3 +1,7 @@
+# 2025-08-26
+
+Updated pipeline to create PR after success in development
+
 # 2025-08-25
 
 First page has been successfully deployed
