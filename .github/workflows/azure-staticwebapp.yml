@@ -4,7 +4,7 @@ name: Deploy web app to Azure Static Web Apps
 
 on:
   push:
-    branches: ["develop"] # push only to develop
+    branches: ["develop", "main"] # Added main for production deployment
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches: ["main", "staging"]
@@ -20,18 +20,19 @@ permissions:
   contents: read
 
 jobs:
-  build_and_deploy_job:
+  # Deploy to Development/Preview environment
+  build_and_deploy_develop:
     permissions:
       contents: read # for actions/checkout to fetch code
       pull-requests: write # for Azure/static-web-apps-deploy to comment on PRs
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' || (github.event_name == 'pull_request' && github.event.action != 'closed' && github.base_ref != 'refs/heads/main')
     runs-on: ubuntu-latest
-    name: Build and Deploy Job
+    name: Build and Deploy to Development
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Build And Deploy
+      - name: Build And Deploy to Development
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -45,8 +46,10 @@ jobs:
           # api_location: ${{ env.API_LOCATION }}
           # app_artifact_location: ${{ env.APP_ARTIFACT_LOCATION }}
           ###### End of Repository/Build Configurations ######
-  create_pr_to_staging: # let's hope it works now
-    needs: build_and_deploy_job
+
+  # Create PR from develop to staging after successful deployment
+  create_pr_to_staging:
+    needs: build_and_deploy_develop
     permissions:
       contents: write
       pull-requests: write
@@ -63,11 +66,78 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create \
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list \
             --base staging \
             --head develop \
-            --title "Auto PR: Deploy develop to staging" \
-            --body "Automated PR created after successful deployment to develop environment"
+            --state open \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -z "$EXISTING_PR" ]; then
+            echo "Creating new PR from develop to staging..."
+            gh pr create \
+              --base staging \
+              --head develop \
+              --title "🚀 Auto PR: Deploy develop to staging" \
+              --body "## Automated Pull Request
+
+          This PR was automatically created after successful deployment to develop environment.
+
+          **Commit:** ${{ github.sha }}
+          **Run:** ${{ github.run_number }}
+          **Actor:** @${{ github.actor }}"
+          else
+            echo "PR #$EXISTING_PR already exists from develop to staging"
+          fi
+
+  # Deploy to Production environment when main branch is updated
+  deploy_to_production:
+    permissions:
+      contents: read
+      pull-requests: write
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Deploy to Azure Production
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: ${{ env.APP_LOCATION }}
+          # No deployment_environment means it deploys to production
+          # api_location: ${{ env.API_LOCATION }}
+          # app_artifact_location: ${{ env.APP_ARTIFACT_LOCATION }}
+
+  # Handle PR previews for staging and main branches
+  build_and_deploy_pr_preview:
+    permissions:
+      contents: read
+      pull-requests: write
+    if: github.event_name == 'pull_request' && github.event.action != 'closed' && (github.base_ref == 'refs/heads/staging' || github.base_ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    name: Build and Deploy PR Preview
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Build And Deploy PR Preview
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: ${{ env.APP_LOCATION }}
+          # api_location: ${{ env.API_LOCATION }}
+          # app_artifact_location: ${{ env.APP_ARTIFACT_LOCATION }}
+
+  # Close PR previews
   close_pull_request_job:
     permissions:
       contents: none
@@ -79,6 +149,6 @@ jobs:
         id: closepullrequest
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }} # secret containing api token for app
+          azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           app_location: ${{ env.APP_LOCATION }}
           action: "close"
