@@ -61,8 +61,7 @@ nav a:hover {
   transform: translateY(-2px);
 }
 
-/* Active tab styling */
-nav a:focus,
+/* Active tab styling - Fixed selectors */
 #home:target ~ nav a[href="#home"],
 #about:target ~ nav a[href="#about"],
 #blog:target ~ nav a[href="#blog"],
@@ -71,18 +70,41 @@ nav a:focus,
   border-bottom-color: #2980b9;
 }
 
-/* Content sections */
+/* Default active state for home */
+nav a[href="#home"] {
+  background: #3498db;
+  border-bottom-color: #2980b9;
+}
+
+/* Remove active state from home when other tabs are active */
+#about:target ~ nav a[href="#home"],
+#blog:target ~ nav a[href="#home"],
+#interview:target ~ nav a[href="#home"] {
+  background: #2c3e50;
+  border-bottom-color: transparent;
+}
+
+/* Content sections - All hidden by default */
 section {
   display: none;
   padding: 40px;
   animation: fadeIn 0.5s ease-in;
 }
 
-/* Show targeted section */
-section:target {
+/* Show home by default (when no hash in URL) */
+.container:not(:has(#about:target, #blog:target, #interview:target)) #home {
   display: block;
 }
 
+/* Show targeted sections */
+#home:target,
+#about:target,
+#blog:target,
+#interview:target {
+  display: block;
+}
+
+/* Alternative approach - more browser compatible */
 /* Show home by default */
 #home {
   display: block;
@@ -141,12 +163,12 @@ p {
 }
 
 /* Links styling */
-a {
+a:not(nav a) {
   color: #3498db;
   text-decoration: none;
 }
 
-a:hover {
+a:not(nav a):hover {
   text-decoration: underline;
   color: #2980b9;
 }
