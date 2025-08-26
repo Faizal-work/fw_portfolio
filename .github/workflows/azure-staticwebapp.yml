@@ -26,13 +26,13 @@ jobs:
       pull-requests: write # for Azure/static-web-apps-deploy to comment on PRs
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-    name: Build and Deploy to Develop
+    name: Build and Deploy to Develop Environment
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
       - name: Build And Deploy
-        id: builddeploy
+        id: builddeployDevelopment
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }} # secret containing api token for app
@@ -63,7 +63,7 @@ jobs:
           submodules: true
 
       - name: Build And Deploy to Staging
-        id: builddeploy
+        id: builddeployStaging
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }}
@@ -71,3 +71,29 @@ jobs:
           action: "upload"
           app_location: ${{ env.APP_LOCATION }}
           deployment_environment: "staging"
+
+  # Deploy to production (PR only)
+  deploy_production:
+    permissions:
+      contents: read
+      pull-requests: write
+    if: |
+      github.event_name == 'pull_request' && 
+      github.event.action != 'closed' && 
+      github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    name: Deploy to production Environment
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Build And Deploy to Production
+        id: builddeployproduction
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: ${{ env.APP_LOCATION }}
+          deployment_environment: "main"
