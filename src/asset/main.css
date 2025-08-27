@@ -62,7 +62,6 @@ nav a:hover {
 }
 
 /* Active tab styling - Fixed selectors */
-
 #home:target ~ nav a[href="#home"],
 #about:target ~ nav a[href="#about"],
 #blog:target ~ nav a[href="#blog"],
