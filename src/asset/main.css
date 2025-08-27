@@ -9,7 +9,6 @@ body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   color: #333;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
 }
 
@@ -62,10 +61,6 @@ nav a:hover {
 }
 
 /* Active tab styling - Fixed selectors */
-<<<<<<< HEAD:src/asset/main.css
-=======
-
->>>>>>> staging:asset/main.css
 #home:target ~ nav a[href="#home"],
 #about:target ~ nav a[href="#about"],
 #blog:target ~ nav a[href="#blog"],
@@ -92,7 +87,6 @@ nav a[href="#home"] {
 section {
   display: none;
   padding: 40px;
-  animation: fadeIn 0.5s ease-in;
 }
 
 /* Show home by default (when no hash in URL) */
@@ -119,18 +113,6 @@ section {
 #blog:target ~ #home,
 #interview:target ~ #home {
   display: none;
-}
-
-/* Fade in animation */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* Typography */
