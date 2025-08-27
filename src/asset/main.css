@@ -114,7 +114,6 @@ section {
 #interview:target ~ #home {
   display: none;
 }
-
 /* Typography */
 h1 {
   color: #2c3e50;
