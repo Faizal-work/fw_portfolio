@@ -62,7 +62,10 @@ nav a:hover {
 }
 
 /* Active tab styling - Fixed selectors */
+<<<<<<< HEAD:src/asset/main.css
+=======
 
+>>>>>>> staging:asset/main.css
 #home:target ~ nav a[href="#home"],
 #about:target ~ nav a[href="#about"],
 #blog:target ~ nav a[href="#blog"],
