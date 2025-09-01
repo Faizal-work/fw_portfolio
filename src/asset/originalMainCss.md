@@ -1,0 +1,199 @@
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  min-height: 100vh;
+}
+
+/* Container for everything */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  min-height: 100vh;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation Styles */
+nav {
+  background: #2c3e50;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+nav li {
+  flex: 1;
+  min-width: 200px;
+}
+
+nav a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  padding: 20px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+}
+
+nav a:hover {
+  background: #34495e;
+  border-bottom-color: #3498db;
+  transform: translateY(-2px);
+}
+
+/* Active tab styling - Fixed selectors */
+#home:target ~ nav a[href="#home"],
+#about:target ~ nav a[href="#about"],
+#blog:target ~ nav a[href="#blog"],
+#interview:target ~ nav a[href="#interview"] {
+  background: #3498db;
+  border-bottom-color: #2980b9;
+}
+
+/* Default active state for home */
+nav a[href="#home"] {
+  background: #3498db;
+  border-bottom-color: #2980b9;
+}
+
+/* Remove active state from home when other tabs are active */
+#about:target ~ nav a[href="#home"],
+#blog:target ~ nav a[href="#home"],
+#interview:target ~ nav a[href="#home"] {
+  background: #2c3e50;
+  border-bottom-color: transparent;
+}
+
+/* Content sections - All hidden by default */
+section {
+  display: none;
+  padding: 40px;
+}
+
+/* Show home by default (when no hash in URL) */
+.container:not(:has(#about:target, #blog:target, #interview:target)) #home {
+  display: block;
+}
+
+/* Show targeted sections */
+#home:target,
+#about:target,
+#blog:target,
+#interview:target {
+  display: block;
+}
+
+/* Alternative approach - more browser compatible */
+/* Show home by default */
+#home {
+  display: block;
+}
+
+/* Hide home when other sections are targeted */
+#about:target ~ #home,
+#blog:target ~ #home,
+#interview:target ~ #home {
+  display: none;
+}
+/* Typography */
+h1 {
+  color: #2c3e50;
+  font-size: 2.5em;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+h2 {
+  color: #34495e;
+  font-size: 2em;
+  margin-bottom: 30px;
+  text-align: center;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
+}
+
+h3 {
+  color: #2c3e50;
+  font-size: 1.4em;
+  margin: 30px 0 15px 0;
+  border-left: 4px solid #3498db;
+  padding-left: 15px;
+}
+
+p {
+  margin-bottom: 20px;
+  text-align: justify;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Links styling */
+a:not(nav a) {
+  color: #3498db;
+  text-decoration: none;
+}
+
+a:not(nav a):hover {
+  text-decoration: underline;
+  color: #2980b9;
+}
+
+/* Articles in blog and interview sections */
+article {
+  background: #f8f9fa;
+  margin: 30px 0;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+article h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  nav ul {
+    flex-direction: column;
+  }
+
+  nav li {
+    min-width: auto;
+  }
+
+  section {
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 2em;
+  }
+
+  h2 {
+    font-size: 1.6em;
+  }
+}

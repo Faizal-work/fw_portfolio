@@ -1,3 +1,11 @@
+# 2025-08-31
+
+Followed a new tutorial to figure out what is lacking
+
+# 2025-08-29
+
+Updating the codes for a better polished look by following a proper tutorial
+
 # 2025-08-26
 
 Updated pipeline to create PR after success in development
