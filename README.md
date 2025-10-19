@@ -1,3 +1,7 @@
+# 2025-10-19
+
+Templating using DrewDevault and created first article dodumenting my progress
+
 # 2025-08-31
 
 Followed a new tutorial to figure out what is lacking
