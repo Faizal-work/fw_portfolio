@@ -1,0 +1,11 @@
+Some keywords for you to study to stand out (hint: Ask ChatGPT to explain
+them to you - using Chat in your own time to help with prep is OK, but you need
+to ask to EXPLAIN so you can discuss them with us)
+IOptions
+Middleware
+Nuget
+Dependency Injection (come on, this is a major part of modern dotnet, you
+should already be comfortable with this 😀)
+XUnit
+Parameterised Unit Test
+NSubstitute (an alternative to Moq)0
