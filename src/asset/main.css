@@ -36,7 +36,6 @@
 
   /* Custom pairs */
   --space-s-l: clamp(1.125rem, 0.6467rem + 2.3913vw, 2.5rem);
-
 }
 
 /**
@@ -186,7 +185,6 @@ h5,
   }
 }
 .text_center {
-
   text-align: center;
 }
 .text_right {
