@@ -1,0 +1,174 @@
+<!--
+  What needs adding:
+  1. API
+  2. CSS -> Simple styling -- started
+  3. Sonarscan
+  4. Dockers to simulate high volume situation
+-->
+<!DOCTYPE html>
+<html>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="A static website that emulates the best practices from McMasterr-Carr."
+  />
+
+  <link rel="manifest" href="img/icons/site.webmanifest" />
+  <link
+    rel="mask-icon"
+    href="img/icons/safari-pinned-tab.svg"
+    color="#5bbad5"
+  />
+  <link rel="shortcut icon" href="img/icons/favicon.ico" />
+  <link rel="stylesheet" href="./asset/main.css" />
+  <meta name="msapplication-TileColor" content="#da532c" />
+  <meta name="msapplication-TileImage" content="img/icons/mstile-144x144.png" />
+  <meta name="msapplication-config" content="img/icons/browserconfig.xml" />
+  <meta name="theme-color" content="#ffffff" />
+  <head>
+    <meta charset="UTF-8" />
+    <title>Faizal.Work</title>
+  </head>
+  <body>
+    <header class="site_header">
+      <div class="wrapper_inner">
+        <nav class="site_header_nav">
+          <ul role="list" class="flex flex_center">
+            <li><a href="#home">HOME</a></li>
+            <li><a href="#about">ABOUT</a></li>
+            <li><a href="#blog">BLOG</a></li>
+            <li><a href="#interview">PAST INTERVIEW QUESTIONS</a></li>
+          </ul>
+        </nav>
+        <main>
+          <section id="hero">
+            <div class="wrapper">
+              <div class="wrapper_inner">
+                <div class="text_center hero_content">
+                  <h1 class="h2">Faizal.Work</h1>
+                  <p class="h5">WEB DEVELOPER && TECHNICAL WRITER</p>
+                </div>
+              </div>
+              <ul role="list" class="flex flex_between hero_social">
+                <address>Kuala Lumpur</address>
+                <ul role="list" class="flex">
+                  <li>Find me online</li>
+                  <li>
+                    <a href="https://github.com/Faizal-work/" target="_blank">
+                      <img
+                        src="./asset/icon-github.svg"
+                        alt="GitHub"
+                        width="24"
+                        height="24"
+                      />
+                    </a>
+                  </li>
+                </ul>
+              </ul>
+            </div>
+          </section>
+          <section id="about">
+            <div class="wrapper">
+              <div class="text_center">
+                <h2>My Name is Ahmad Faizal</h2>
+              </div>
+              <div class="wrapper_inner">
+                <div class="about_content flex flex_around">
+                  <figure class="about_figure text_center">
+                    <img
+                      width="200px"
+                      height="200px"
+                      src="./asset/fw_Logo.png"
+                      alt="Developer"
+                      class="about_img"
+                    />
+                    <figcaption class="about_caption"></figcaption>
+                  </figure>
+                  <p class="h5">
+                    Lorem Ipsum.... I think there is an occuring theme here that
+                    I need to flesh out this page in detail. Thank you for
+                    coming this far
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="work">
+            <div class="wrapper_inner">
+              <div class="text_center">
+                <h4 class="h5">
+                  So far I've helped 20+ companies build their web presence and
+                  improve their technical documentation.
+                </h4>
+                <ul role="list" class="work_logos flex flex_center">
+                  <li>
+                    <img src="./asset/logo1.png" alt="Acme Corp" />
+                  </li>
+                  <li>
+                    <img src="./asset/logo2.png" alt="Acme Innovations" />
+                  </li>
+                  <li>
+                    <img
+                      src="./asset/logo1.png"
+                      alt="Acme Solutions"
+                      width="50"
+                      height="50"
+                    />
+                  </li>
+                  <li>
+                    <img src="./asset/logo3.png" alt="Acme Technologies" />
+                  </li>
+                  <li>
+                    <img src="./asset/logo1.png" alt="Acme Enterprises" />
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+          <section id="contact">
+            <div class="wrapper">
+              <div class="text_left">
+                <p>
+                  Want to work together? <br />
+                  I'd love to hear from you.
+                </p>
+              </div>
+
+              <div class="wrapper_inner">
+                <h5 class="h3">Contact Me</h5>
+                <form action="" method="post" class="contact_form">
+                  <div class="flex">
+                    <div class="form_group">
+                      <label for="name">NAME</label>
+                      <input type="text" id="name" name="name" />
+                    </div>
+                    <div class="form_group">
+                      <label for="email">EMAIL</label>
+                      <input type="email" id="email" name="email" />
+                    </div>
+                  </div>
+                  <div class="form_group">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message"></textarea>
+                  </div>
+                  <button type="submit">SEND MESSAGE</button>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <footer>
+            <section id="footer">
+              <div class="wrapper">
+                <div class="text_right">
+                  <p>&copy; 2025 Spruce Emmanuel</p>
+                </div>
+              </div>
+            </section>
+          </footer>
+        </main>
+      </div>
+    </header>
+  </body>
+</html>
