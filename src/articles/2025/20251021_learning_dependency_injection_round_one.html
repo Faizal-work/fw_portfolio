@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Learning Dependency Injection: A Gamified Journey</title>
+    <link rel="stylesheet" href="../../asset/drew.min.css" />
+  </head>
+  <body>
+    <h1>
+      Learning Dependency Injection: A Gamified Journey
+      <small> <span class="date">21-October-2025</span> by Faizal.Work </small>
+    </h1>
+    <main>
+      <article>
+        <h2>Introduction</h2>
+        <p>
+          This document captures a hands-on learning journey through Dependency
+          Injection (DI) in C#. Instead of passive learning, we used a gamified
+          approach with a point system to make the learning process interactive
+          and memorable.
+        </p>
+
+        <h3>The Game Rules</h3>
+        <ul>
+          <li><strong>Starting Points:</strong> 50</li>
+          <li>
+            <strong>Corrections:</strong> -2 to -5 points depending on severity
+          </li>
+          <li><strong>Wins:</strong> +1 point for each correct solution</li>
+          <li>
+            <strong>Goal:</strong> Learn all three types of DI through hands-on
+            practice
+          </li>
+        </ul>
+
+        <h2>Phase 0: The Problem - Tightly Coupled Code</h2>
+        <p>We started with code that "works" but has serious design issues:</p>
+
+        <pre><code>public class User
+{
+    public string Name { get; set; }
+    public string Email { get; set; }
+    private decimal _balance;
+
+    public User(string name, string email, decimal initialBalance)
+    {
+        Name = name;
+        Email = email;
+        _balance = initialBalance;
+    }
+
+    public void SendWelcomeEmail()
+    {
+        EmailService emailService = new EmailService(); // ❌ Tight coupling!
+        emailService.Send(Email, "Welcome!", $"Hello {Name}...");
+    }
+
+    public bool Withdraw(decimal amount)
+    {
+        BankAccount account = new BankAccount(_balance); // ❌ Creates fresh each time!
+        if (account.HasSufficientFunds(amount))
+        {
+            _balance = account.Deduct(amount);
+            EmailService emailService = new EmailService(); // ❌ Again!
+            emailService.Send(Email, "Withdrawal Notification", ...);
+            return true;
+        }
+        return false;
+    }
+}</code></pre>
+
+        <h3>Problems Identified</h3>
+        <ul>
+          <li>
+            <strong>Tight Coupling:</strong> User creates its own dependencies
+            with <code>new</code>
+          </li>
+          <li>
+            <strong>Hard to Test:</strong> Can't mock EmailService or
+            BankAccount
+          </li>
+          <li>
+            <strong>Hard to Change:</strong> Want SMS instead? Must modify User
+            class
+          </li>
+        </ul>
+
+        <h2>Phase 1: Constructor Injection</h2>
+        <p><strong>Score at start: 50 points</strong></p>
+
+        <h3>Common Mistakes Made</h3>
+        <details>
+          <summary>
+            Mistake #1: Inheritance Instead of Composition (-4 points)
+          </summary>
+          <pre><code>public class User : IEmailService // ❌ WRONG!
+{
+    // User shouldn't BE an email service, it should USE one
+}</code></pre>
+          <p>
+            <strong>Lesson:</strong> Use "has-a" relationship (composition), not
+            "is-a" (inheritance)
+          </p>
+        </details>
+
+        <details>
+          <summary>Mistake #2: Implementation in Interface (-4 points)</summary>
+          <pre><code>public interface IEmailService
+{
+    void Send(string to, string subject, string body)
+    {
+        Console.WriteLine(...); // ❌ Interfaces don't have bodies in C#!
+    }
+}</code></pre>
+          <p>
+            <strong>Lesson:</strong> Interfaces are contracts - just signatures,
+            no implementation
+          </p>
+        </details>
+
+        <details>
+          <summary>Mistake #3: Still Creating Dependencies (-4 points)</summary>
+          <pre><code>public User(IEmailService emailService)
+{
+    _emailService = emailService;
+}
+
+public void Withdraw(decimal amount)
+{
+    EmailService emailService = new EmailService(); // ❌ Still doing new!
+}</code></pre>
+          <p>
+            <strong>Lesson:</strong> Use the injected dependency, don't create
+            new ones
+          </p>
+        </details>
+
+        <details>
+          <summary>Mistake #4: Naming Inconsistency (-3 points)</summary>
+          <pre><code>private readonly IEmailService emailService; // No underscore
+// but later:
+_emailService = emailService; // With underscore</code></pre>
+          <p><strong>Lesson:</strong> Be consistent with naming conventions</p>
+        </details>
+
+        <details>
+          <summary>Mistake #5: Using Non-Existent Field (-3 points)</summary>
+          <pre><code>// private decimal _balance; // Commented out
+_balance = initialBalance; // ❌ But still using it!</code></pre>
+          <p>
+            <strong>Lesson:</strong> If you remove a field, update all
+            references
+          </p>
+        </details>
+
+        <h3>The Correct Solution (+4 points)</h3>
+        <pre><code>public interface IEmailService
+{
+    void Send(string to, string subject, string body); // Just signature
+}
+
+public interface IBankAccount
+{
+    bool HasSufficientFunds(decimal amount);
+    decimal Deduct(decimal amount);
+    decimal GetBalance();
+}
+
+public class User
+{
+    private readonly IEmailService _emailService; // ✅ Store injected dependency
+    private readonly IBankAccount _bankAccount;
+    
+    public string Name { get; set; }
+    public string Email { get; set; }
+
+    public User(string name, string email, 
+                IEmailService emailService, // ✅ Inject through constructor
+                IBankAccount bankAccount)
+    {
+        Name = name;
+        Email = email;
+        _emailService = emailService; // ✅ Store it
+        _bankAccount = bankAccount;
+    }
+
+    public void SendWelcomeEmail()
+    {
+        _emailService.Send(Email, "Welcome!", $"Hello {Name}..."); // ✅ Use injected
+    }
+
+    public bool Withdraw(decimal amount)
+    {
+        if (_bankAccount.HasSufficientFunds(amount))
+        {
+            _bankAccount.Deduct(amount);
+            decimal newBalance = _bankAccount.GetBalance();
+            _emailService.Send(Email, "Withdrawal", $"Withdrew ${amount}...");
+            return true;
+        }
+        return false;
+    }
+}
+
+// Implementation classes
+public class EmailService : IEmailService
+{
+    public void Send(string to, string subject, string body)
+    {
+        Console.WriteLine($"Sending email to {to}: {subject} - {body}");
+    }
+}
+
+public class BankAccount : IBankAccount
+{
+    private decimal _balance;
+    
+    public BankAccount(decimal initialBalance)
+    {
+        _balance = initialBalance;
+    }
+    
+    public bool HasSufficientFunds(decimal amount) => _balance >= amount;
+    
+    public decimal Deduct(decimal amount)
+    {
+        _balance -= amount;
+        return _balance;
+    }
+    
+    public decimal GetBalance() => _balance;
+}</code></pre>
+
+        <h2>Phase 2: Property Injection</h2>
+        <p><strong>Score: 41 points</strong></p>
+
+        <h3>Understanding Property Injection</h3>
+        <p>
+          Property Injection makes dependencies <strong>optional</strong>.
+          Unlike Constructor Injection where dependencies are required, Property
+          Injection allows objects to exist and function without certain
+          dependencies.
+        </p>
+
+        <h3>Common Mistakes Made</h3>
+        <details>
+          <summary>Mistake #6: Code Execution Inside Class (-3 points)</summary>
+          <pre><code>public class User
+{
+    public IEmailService EmailService { get; set; }
+    
+    var user = new User(...); // ❌ Can't execute code here!
+    user.EmailService = new EmailService();
+}</code></pre>
+          <p>
+            <strong>Lesson:</strong> Execution code goes in methods or Main, not
+            in class body
+          </p>
+        </details>
+
+        <details>
+          <summary>Mistake #7: Wrong Variable Name (-2 points)</summary>
+          <pre><code>_emailService.Send(...) // ❌ Field doesn't exist anymore with property injection</code></pre>
+          <p>
+            <strong>Lesson:</strong> Use the property name, not the old field
+            name
+          </p>
+        </details>
+
+        <h3>The Correct Solution (+3 points)</h3>
+        <pre><code>public class User
+{
+    private readonly IBankAccount _bankAccount; // Constructor Injection
+    public IEmailService EmailService { get; set; } // ✅ Property Injection
+    
+    public string Name { get; set; }
+    public string Email { get; set; }
+
+    public User(string name, string email, IBankAccount bankAccount)
+    {
+        Name = name;
+        Email = email;
+        _bankAccount = bankAccount;
+        // EmailService NOT set here - it's optional
+    }
+
+    public void SendWelcomeEmail()
+    {
+        EmailService?.Send(Email, "Welcome!", ...); // ✅ Null-conditional operator
+    }
+
+    public bool Withdraw(decimal amount)
+    {
+        if (_bankAccount.HasSufficientFunds(amount))
+        {
+            _bankAccount.Deduct(amount);
+            decimal newBalance = _bankAccount.GetBalance();
+            EmailService?.Send(Email, "Withdrawal", ...); // ✅ Check for null
+            return true;
+        }
+        return false;
+    }
+}
+
+// Usage:
+var bankAccount = new BankAccount(1000);
+var user = new User("John", "a@g.com", bankAccount)
+{
+    EmailService = new EmailService() // ✅ Set property after construction
+};
+user.SendWelcomeEmail();</code></pre>
+
+        <h2>Phase 3: Method Injection</h2>
+        <p><strong>Score: 42 points</strong></p>
+
+        <h3>Understanding Method Injection</h3>
+        <p>
+          Method Injection passes the dependency as a
+          <strong>parameter to a specific method</strong>
+          that needs it. This provides maximum flexibility - different calls can
+          use different implementations.
+        </p>
+
+        <h3>Common Mistakes Made</h3>
+        <details>
+          <summary>Mistake #8: Wrong Responsibility (-3 points)</summary>
+          <pre><code>public interface IBankAccount
+{
+    void Deposit(decimal amount, IEmailService notificationService); // ❌
+}
+
+public class BankAccount : IBankAccount
+{
+    public void Deposit(decimal amount, IEmailService notificationService)
+    {
+        _balance += amount;
+        notificationService.Send(...); // ❌ BankAccount shouldn't know about emails!
+    }
+}</code></pre>
+          <p>
+            <strong>Lesson:</strong> Keep responsibilities separate. BankAccount
+            handles money, User handles notifications
+          </p>
+        </details>
+
+        <details>
+          <summary>Mistake #9: Syntax Error with Types (-2 points)</summary>
+          <pre><code>_bankAccount.Deposit(decimal amount, IEmailService notificationService); // ❌</code></pre>
+          <p>
+            <strong>Lesson:</strong> Pass variables, not types. Should be:
+            <code>_bankAccount.Deposit(amount)</code>
+          </p>
+        </details>
+
+        <details>
+          <summary>Mistake #10: Assigning Void Return (-2 points)</summary>
+          <pre><code>decimal newBalance = _bankAccount.Deposit(amount); // ❌ Deposit returns void!</code></pre>
+          <p>
+            <strong>Lesson:</strong> Check return types. Call separately if
+            method returns void
+          </p>
+        </details>
+
+        <details>
+          <summary>
+            Mistake #11: Missing Interface Parameter (-2 points)
+          </summary>
+          <pre><code>void Deposit(); // ❌ Missing the amount parameter</code></pre>
+          <p>
+            <strong>Lesson:</strong> Interface and implementation signatures
+            must match
+          </p>
+        </details>
+
+        <h3>The Correct Solution (+6 points)</h3>
+        <pre><code>public interface IBankAccount
+{
+    bool HasSufficientFunds(decimal amount);
+    decimal Deduct(decimal amount);
+    decimal GetBalance();
+    void Deposit(decimal amount); // ✅ Simple, focused on money only
+}
+
+public class BankAccount : IBankAccount
+{
+    private decimal _balance;
+    
+    public BankAccount(decimal initialBalance)
+    {
+        _balance = initialBalance;
+    }
+    
+    public void Deposit(decimal amount) // ✅ Just handles the deposit
+    {
+        _balance += amount;
+    }
+    
+    // ... other methods
+}
+
+public class User
+{
+    private readonly IBankAccount _bankAccount;
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public IEmailService EmailService { get; set; }
+
+    // ✅ Method Injection - dependency passed to specific method
+    public void Deposit(decimal amount, IEmailService notificationService)
+    {
+        _bankAccount.Deposit(amount); // Update balance
+        decimal newBalance = _bankAccount.GetBalance(); // Get new balance
+        notificationService.Send(Email, "Deposit Confirmation", 
+            $"Hello {Name}, you deposited ${amount}. New balance: ${newBalance}");
+    }
+}
+
+// Usage - different email service per call:
+user.Deposit(1000, new EmailService());
+user.Deposit(500, new SmsService()); // ✅ Can use different implementation!</code></pre>
+
+        <h2>Final Results</h2>
+        <h3>Score Summary</h3>
+        <ul>
+          <li><strong>Starting Points:</strong> 50</li>
+          <li>
+            <strong>Total Corrections:</strong> -13 points (from 11 distinct
+            mistakes)
+          </li>
+          <li><strong>Total Wins:</strong> +12 points</li>
+          <li><strong>Final Score:</strong> 37 points</li>
+        </ul>
+
+        <h3>Key Lessons Learned</h3>
+        <ol>
+          <li>
+            <strong>Separation of Concerns:</strong> Each class should have one
+            responsibility
+          </li>
+          <li>
+            <strong>Interfaces Define Contracts:</strong> Just signatures, no
+            implementation
+          </li>
+          <li>
+            <strong>Composition Over Inheritance:</strong> "Has-a" not "is-a"
+          </li>
+          <li>
+            <strong>Don't Create Dependencies:</strong> Use injected ones
+            instead of <code>new</code>
+          </li>
+          <li>
+            <strong>Null Safety:</strong> Use <code>?.</code> operator for
+            optional dependencies
+          </li>
+          <li>
+            <strong>Return Types Matter:</strong> Check if methods return values
+            before assigning
+          </li>
+          <li>
+            <strong>Right Responsibility in Right Place:</strong> Method
+            injection goes where the logic lives
+          </li>
+        </ol>
+
+        <h2>Comparison of DI Types</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Constructor Injection</th>
+              <th>Property Injection</th>
+              <th>Method Injection</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>When Set</strong></td>
+              <td>At object creation</td>
+              <td>After object creation</td>
+              <td>At method call</td>
+            </tr>
+            <tr>
+              <td><strong>Required?</strong></td>
+              <td class="red">Yes - must provide</td>
+              <td class="yellow">No - optional</td>
+              <td class="blue">Per method call</td>
+            </tr>
+            <tr>
+              <td><strong>Mutability</strong></td>
+              <td class="red">Immutable (readonly)</td>
+              <td class="yellow">Can change</td>
+              <td class="blue">Different per call</td>
+            </tr>
+            <tr>
+              <td><strong>Example</strong></td>
+              <td><code>new User(..., bankAccount)</code></td>
+              <td><code>user.EmailService = service</code></td>
+              <td><code>user.Deposit(100, service)</code></td>
+            </tr>
+            <tr>
+              <td><strong>Best For</strong></td>
+              <td>Critical dependencies</td>
+              <td>Optional features</td>
+              <td>Per-operation needs</td>
+            </tr>
+            <tr>
+              <td><strong>Testing</strong></td>
+              <td>Easy - pass mocks</td>
+              <td>Easy - set test double</td>
+              <td>Easy - pass mock per test</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Complete Final Code</h2>
+        <pre><code>// Interfaces
+public interface IEmailService
+{
+    void Send(string to, string subject, string body);
+}
+
+public interface IBankAccount
+{
+    bool HasSufficientFunds(decimal amount);
+    decimal Deduct(decimal amount);
+    decimal GetBalance();
+    void Deposit(decimal amount);
+}
+
+// User Class - Uses all three DI types
+public class User
+{
+    // Constructor Injection - Required
+    private readonly IBankAccount _bankAccount;
+    
+    // Property Injection - Optional
+    public IEmailService EmailService { get; set; }
+    
+    public string Name { get; set; }
+    public string Email { get; set; }
+
+    public User(string name, string email, IBankAccount bankAccount)
+    {
+        Name = name;
+        Email = email;
+        _bankAccount = bankAccount;
+    }
+
+    public void SendWelcomeEmail()
+    {
+        EmailService?.Send(Email, "Welcome!", $"Hello {Name}, welcome to our bank!");
+    }
+
+    public bool Withdraw(decimal amount)
+    {
+        if (_bankAccount.HasSufficientFunds(amount))
+        {
+            _bankAccount.Deduct(amount);
+            decimal newBalance = _bankAccount.GetBalance();
+            EmailService?.Send(Email, "Withdrawal Notification", 
+                $"You withdrew ${amount}. New balance: ${newBalance}");
+            return true;
+        }
+        return false;
+    }
+
+    // Method Injection - Flexible per-call
+    public void Deposit(decimal amount, IEmailService notificationService)
+    {
+        _bankAccount.Deposit(amount);
+        decimal newBalance = _bankAccount.GetBalance();
+        notificationService.Send(Email, "Deposit Confirmation", 
+            $"Hello {Name}, you deposited ${amount}. New balance: ${newBalance}");
+    }
+
+    public decimal GetBalance() => _bankAccount.GetBalance();
+}
+
+// Implementation Classes
+public class EmailService : IEmailService
+{
+    public void Send(string to, string subject, string body)
+    {
+        Console.WriteLine($"Sending email to {to}: {subject} - {body}");
+    }
+}
+
+public class BankAccount : IBankAccount
+{
+    private decimal _balance;
+
+    public BankAccount(decimal initialBalance)
+    {
+        _balance = initialBalance;
+    }
+
+    public bool HasSufficientFunds(decimal amount) => _balance >= amount;
+
+    public decimal Deduct(decimal amount)
+    {
+        _balance -= amount;
+        return _balance;
+    }
+
+    public decimal GetBalance() => _balance;
+
+    public void Deposit(decimal amount)
+    {
+        _balance += amount;
+    }
+}
+
+// Usage Example
+public static void Main()
+{
+    // Constructor Injection
+    var bankAccount = new BankAccount(1000);
+    var user = new User("John", "a@g.com", bankAccount)
+    {
+        // Property Injection
+        EmailService = new EmailService()
+    };
+
+    user.SendWelcomeEmail();
+    
+    // Method Injection
+    user.Deposit(1000, new EmailService());
+    
+    Console.WriteLine("Balance before withdrawal: $" + user.GetBalance());
+    bool success = user.Withdraw(200);
+    Console.WriteLine("Withdrawal success: " + success);
+    Console.WriteLine("Balance after withdrawal: $" + user.GetBalance());
+}</code></pre>
+
+        <h2>Conclusion</h2>
+        <p>
+          Through this gamified learning approach, we transformed
+          tightly-coupled code into a flexible, testable, and maintainable
+          design using all three types of Dependency Injection. The mistakes
+          made along the way were valuable learning opportunities that
+          reinforced key concepts.
+        </p>
+
+        <p>
+          The most important takeaway:
+          <strong
+            >Dependency Injection isn't about perfect code on the first try -
+            it's about understanding the principles and iteratively improving
+            your design.</strong
+          >
+        </p>
+
+        <div class="alert alert-info">
+          <strong>Next Steps:</strong> Explore IoC (Inversion of Control)
+          containers like Microsoft.Extensions.DependencyInjection, Autofac, or
+          Ninject to automatically manage dependency injection in larger
+          applications.
+        </div>
+      </article>
+
+      <!-- Return link -->
+      <span><a href="../../index.html">Main Page</a></span>
+    </main>
+    <footer>
+      The
+      <a href="https://git.sr.ht/~sircmpwn/drewdevault.com"
+        >code for this site</a
+      >
+      is <a href="https://opensource.org/licenses/MIT">MIT</a>.
+    </footer>
+  </body>
+</html>
