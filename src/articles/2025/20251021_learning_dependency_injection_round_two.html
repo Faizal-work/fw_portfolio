@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Learning Dependency Injection Round 2: Task Manager System</title>
+    <link rel="stylesheet" href="../../asset/drew.min.css" />
+  </head>
+  <body>
+    <h1>
+      Learning Dependency Injection Round 2: Task Manager System
+      <small> <span class="date">21-October-2025</span> by Faizal.Work </small>
+    </h1>
+    <main>
+      <article>
+        <h2>Introduction</h2>
+        <p>
+          This is Round 2 of the gamified Dependency Injection learning journey.
+          After completing the Bank System in Round 1, we tackle a new scenario:
+          a Task Manager application. This round proved that
+          <strong>naming consistency is the silent killer of scores</strong>,
+          with the learner dropping from 52 points to just 3 points primarily
+          due to naming mistakes!
+        </p>
+
+        <h3>Game Rules (Same as Round 1)</h3>
+        <ul>
+          <li><strong>Starting Points:</strong> 50</li>
+          <li>
+            <strong>Corrections:</strong> -2 to -5 points depending on severity
+          </li>
+          <li><strong>Wins:</strong> +1 to +5 points for correct solutions</li>
+          <li><strong>Goal:</strong> Refactor through all three DI types</li>
+        </ul>
+
+        <h2>Phase 0: The Problem - Task Manager with Tight Coupling</h2>
+        <p>
+          We started with a task management system where tasks can be created,
+          completed, and prioritized:
+        </p>
+
+        <pre><code>public class TaskManager
+{
+    public string TaskName { get; set; }
+    public string Description { get; set; }
+    public bool IsCompleted { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public TaskManager(string taskName, string description)
+    {
+        TaskName = taskName;
+        Description = description;
+        IsCompleted = false;
+        CreatedAt = DateTime.Now;
+    }
+
+    public void CreateTask()
+    {
+        DatabaseStorage storage = new DatabaseStorage(); // ❌ Tight coupling!
+        storage.Save(TaskName, Description, CreatedAt);
+        
+        NotificationService notifier = new NotificationService(); // ❌
+        notifier.SendNotification($"Task '{TaskName}' created!");
+    }
+
+    public void CompleteTask()
+    {
+        IsCompleted = true;
+        
+        DatabaseStorage storage = new DatabaseStorage(); // ❌ Created again!
+        storage.Update(TaskName, IsCompleted);
+        
+        NotificationService notifier = new NotificationService(); // ❌ Created again!
+        notifier.SendNotification($"Task '{TaskName}' completed!");
+    }
+
+    public void SetPriority(string priority)
+    {
+        Logger logger = new Logger(); // ❌ Only used here
+        logger.Log($"Setting priority {priority} for task {TaskName}");
+        
+        DatabaseStorage storage = new DatabaseStorage(); // ❌ Created yet again!
+        storage.UpdatePriority(TaskName, priority);
+    }
+}</code></pre>
+
+        <h3>Initial Problem Analysis (+6 points, -5 points)</h3>
+        <p><strong>Score: 50 → 51 points</strong></p>
+
+        <h4>What Was Identified Correctly ✅</h4>
+        <ul>
+          <li>
+            <strong>+3 points:</strong> Not testable, tightly coupled,
+            dependencies recreated multiple times
+          </li>
+          <li>
+            <strong>+2 points:</strong> DatabaseStorage and NotificationService
+            should use Constructor Injection
+          </li>
+          <li>
+            <strong>+1 point:</strong> Logger should be optional (Property
+            Injection)
+          </li>
+        </ul>
+
+        <h4>Mistakes Made ❌</h4>
+        <ul>
+          <li>
+            <strong>-3 points:</strong> Confused Method Injection with method
+            names instead of dependencies
+          </li>
+          <li>
+            <strong>-2 points:</strong> Missed Single Responsibility Principle
+            violation
+          </li>
+        </ul>
+
+        <div class="alert alert-info">
+          <strong>Key Learning:</strong> Method Injection means passing a
+          <em>dependency</em> as a method parameter, not just any method that
+          needs attention. Logger is only used in <code>SetPriority()</code>,
+          making it perfect for Method Injection.
+        </div>
+
+        <h2>Understanding Single Responsibility Principle (SRP)</h2>
+        <p>
+          Before continuing with refactoring, we took a detour to understand
+          SRP, a crucial principle that works hand-in-hand with Dependency
+          Injection.
+        </p>
+
+        <h3>The Problem in TaskManager</h3>
+        <p>TaskManager had <strong>FOUR responsibilities</strong>:</p>
+        <ol>
+          <li>Managing task state (properties, completion status)</li>
+          <li>Deciding HOW to store data (creating DatabaseStorage)</li>
+          <li>Deciding HOW to notify users (creating NotificationService)</li>
+          <li>Deciding HOW to log (creating Logger)</li>
+        </ol>
+
+        <p>
+          <strong>SRP says:</strong> A class should have
+          <strong>one, and only one, reason to change.</strong>
+          TaskManager would need to change if task properties change, storage
+          method changes, notification method changes, OR logging format
+          changes. That's four reasons!
+        </p>
+
+        <h3>The SRP Way</h3>
+        <pre><code>// Each class has ONE responsibility:
+
+// Manages task state ONLY
+public class Task { }
+
+// Stores/retrieves tasks ONLY
+public interface ITaskStorage { }
+
+// Notifies users ONLY
+public interface INotificationService { }
+
+// Logs events ONLY
+public interface ILogger { }
+
+// Coordinates task operations (orchestrator)
+public class TaskManager
+{
+    // Doesn't know HOW to store, notify, or log
+    // Just coordinates these responsibilities
+}</code></pre>
+
+        <h2>Phase 1: The Naming Nightmare (52 → 3 points)</h2>
+        <p><strong>This is where things got rough!</strong></p>
+
+        <h3>Attempt 1: Multiple Interface Issues (-14 points)</h3>
+        <p><strong>Score: 52 → 38 points</strong></p>
+
+        <details>
+          <summary>Mistake Group 1: Interface Bodies (-3 points)</summary>
+          <pre><code>public interface ITaskStorage
+{
+    void Save(string name, string desc, DateTime created){} // ❌ Has body!
+}</code></pre>
+          <p>
+            <strong>Lesson:</strong> In C#, interfaces are contracts - just
+            signatures with semicolons, no bodies!
+          </p>
+          <pre><code>public interface ITaskStorage
+{
+    void Save(string name, string desc, DateTime created); // ✅
+}</code></pre>
+        </details>
+
+        <details>
+          <summary>
+            Mistake Group 2: Properties Instead of Fields (-3 points)
+          </summary>
+          <pre><code>private readonly ITaskStorage DatabaseStorage { get; set; } // ❌ Contradictory!</code></pre>
+          <p>
+            <strong>Problem:</strong> <code>readonly</code> with
+            <code>{ get; set; }</code> doesn't make sense. Use fields:
+          </p>
+          <pre><code>private readonly ITaskStorage _storage; // ✅</code></pre>
+        </details>
+
+        <details>
+          <summary>
+            Mistake Group 3: No Constructor Injection (-4 points)
+          </summary>
+          <pre><code>public TaskManager(string taskName, string description) // ❌ Where are dependencies?
+{
+    Name = taskName;
+    // No dependency injection!
+}</code></pre>
+          <p><strong>Fix:</strong> Add dependencies to constructor:</p>
+          <pre><code>public TaskManager(string taskName, string description,
+                   ITaskStorage storage, INotificationService notifier) // ✅
+{
+    _storage = storage;
+    _notifier = notifier;
+}</code></pre>
+        </details>
+
+        <details>
+          <summary>Mistake Group 4: Calling Interface Type (-3 points)</summary>
+          <pre><code>ITaskStorage.Save(...) // ❌ Can't call methods on type!
+INotificationService.SendNotification(...) // ❌</code></pre>
+          <p><strong>Fix:</strong> Use the instance (field):</p>
+          <pre><code>_storage.Save(...) // ✅
+_notifier.SendNotification(...) // ✅</code></pre>
+        </details>
+
+        <h3>Attempt 2: Semicolon Massacre (-16 points)</h3>
+        <p><strong>Score: 38 → 22 points</strong></p>
+
+        <details>
+          <summary>Missing Semicolons Everywhere (-5 points)</summary>
+          <pre><code>// In interfaces
+void Save(string name, string desc, DateTime created) // ❌ No semicolon!
+void Update(string name, bool completed) // ❌
+
+// On field declarations
+private readonly ITaskStorage DatabaseStorage // ❌ No semicolon!
+private readonly INotificationService NotificationService // ❌</code></pre>
+          <p>
+            <strong>Lesson:</strong> Every statement in C# needs proper
+            termination!
+          </p>
+        </details>
+
+        <details>
+          <summary>Wrong Field Naming (-3 points)</summary>
+          <pre><code>private readonly ITaskStorage DatabaseStorage // ❌ PascalCase</code></pre>
+          <p>
+            <strong>C# Convention:</strong> Private fields use camelCase with
+            underscore:
+          </p>
+          <pre><code>private readonly ITaskStorage _storage; // ✅</code></pre>
+        </details>
+
+        <details>
+          <summary>Constructor Assignment Disaster (-4 points)</summary>
+          <pre><code>public TaskManager(..., ITaskStorage storage, INotificationService notifier)
+{
+    _ITaskStorage storage; // ❌ Trying to DECLARE, not ASSIGN!
+    _INotificationService notifier; // ❌
+}</code></pre>
+          <p>
+            <strong>The Horror:</strong> This tries to create NEW variables of
+            types "_ITaskStorage" and "_INotificationService"!
+          </p>
+          <p><strong>Fix:</strong> ASSIGN parameters to fields:</p>
+          <pre><code>_storage = storage; // ✅ field = parameter
+_notifier = notifier; // ✅</code></pre>
+        </details>
+
+        <h3>Attempt 3: The Mismatch Continues (-11 points)</h3>
+        <p><strong>Score: 22 → 12 points</strong></p>
+
+        <details>
+          <summary>Field Name vs Usage Mismatch (-6 points)</summary>
+          <pre><code>// Declared these names:
+private readonly ITaskStorage DatabaseStorage;
+private readonly INotificationService NotificationService;
+
+// But used these names:
+_taskStorage = storage; // ❌ What is _taskStorage? Never declared!
+_taskStorage.Save(...); // ❌ This doesn't exist!</code></pre>
+          <p>
+            <strong>Critical Rule:</strong> Declaration name = Assignment name =
+            Usage name!
+          </p>
+        </details>
+
+        <h3>Attempt 4: Still Not Matching (-9 points)</h3>
+        <p><strong>Score: 12 → 3 points (The lowest point!)</strong></p>
+
+        <pre><code>// Declared:
+private readonly ITaskStorage DatabaseStorage;
+
+// Assigned:
+_ITaskStorage = storage; // ❌ "_ITaskStorage" was never declared!
+
+// Used:
+_ITaskStorage.Save(...); // ❌ This variable doesn't exist!</code></pre>
+
+        <div class="alert alert-danger">
+          <strong>The Core Problem:</strong> The field name must be IDENTICAL
+          in:
+          <ol>
+            <li>
+              Declaration: <code>private readonly IType _fieldName;</code>
+            </li>
+            <li>Assignment: <code>_fieldName = parameter;</code></li>
+            <li>Usage: <code>_fieldName.Method();</code></li>
+          </ol>
+        </div>
+
+        <h3>Attempt 5: Finally Correct! (+10 points)</h3>
+        <p><strong>Score: 3 → 13 points (Recovery begins!)</strong></p>
+
+        <pre><code>public class TaskManager
+{
+    public string TaskName { get; set; }
+    public string Description { get; set; }
+    public bool IsCompleted { get; set; }
+    public DateTime CreatedAt { get; set; }
+    
+    // ✅ Declared with consistent names
+    private readonly ITaskStorage _taskStorage;
+    private readonly INotificationService _notificationService;
+    public ILogger Logger { get; set; }
+    
+    // ✅ Constructor injection
+    public TaskManager(string taskName, string description,
+                       ITaskStorage storage, INotificationService notifier)
+    {
+        TaskName = taskName;
+        Description = description;
+        IsCompleted = false;
+        CreatedAt = DateTime.Now;
+        
+        // ✅ Assignment uses SAME names as declaration
+        _taskStorage = storage;
+        _notificationService = notifier;
+    }
+    
+    // ✅ Usage uses SAME names
+    public void CreateTask()
+    {
+        _taskStorage.Save(TaskName, Description, CreatedAt);
+        _notificationService.SendNotification($"Task '{TaskName}' created!");
+    }
+}</code></pre>
+
+        <h2>Phase 2: Method Injection (+3 points, -1 point)</h2>
+        <p><strong>Score: 13 → 15 points</strong></p>
+
+        <h3>The Challenge</h3>
+        <p>
+          Convert Logger from Property Injection to Method Injection for
+          <code>SetPriority()</code>.
+        </p>
+
+        <h3>What Was Done Right ✅</h3>
+        <ul>
+          <li>
+            <strong>+3 points:</strong> Added <code>ILogger logger</code> as
+            method parameter
+          </li>
+          <li>
+            Used <code>logger?.Log(...)</code> correctly with null-safe operator
+          </li>
+        </ul>
+
+        <h3>Minor Issue ❌</h3>
+        <ul>
+          <li>
+            <strong>-1 point:</strong> Forgot to remove the
+            <code>public ILogger Logger { get; set; }</code> property
+          </li>
+        </ul>
+
+        <h3>Corrected Method Injection</h3>
+        <pre><code>public class TaskManager
+{
+    private readonly ITaskStorage _taskStorage;
+    private readonly INotificationService _notificationService;
+    // ✅ No Logger property - using Method Injection instead!
+    
+    public void SetPriority(string priority, ILogger logger) // ✅ Injected here
+    {
+        logger?.Log($"Setting priority {priority} for task {TaskName}");
+        _taskStorage.UpdatePriority(TaskName, priority);
+    }
+}</code></pre>
+
+        <h2>Phase 3: Main Method and Testing (+5 points)</h2>
+        <p><strong>Score: 15 → 20 points</strong></p>
+
+        <h3>Perfect Main Method ✅</h3>
+        <pre><code>public static void Main()
+{
+    // Create implementations
+    var storage = new DatabaseStorage();
+    var notifier = new NotificationService();
+    
+    // ✅ Constructor Injection
+    var taskTobeManaged = new TaskManager(
+        "SaveTask",
+        "Saving the Task",
+        storage,
+        notifier
+    );
+    
+    // Use the task manager
+    taskTobeManaged.CreateTask();
+    taskTobeManaged.CompleteTask();
+    
+    // ✅ Method Injection - pass logger just for this operation
+    taskTobeManaged.SetPriority("High", new Logger());
+}</code></pre>
+
+        <h2>Phase 4: Knowledge Check (+7 points, -2 points)</h2>
+        <p><strong>Score: 20 → 27 points (Final!)</strong></p>
+
+        <h3>Question 1: When to use Constructor Injection? ✅</h3>
+        <p>
+          <strong>Answer:</strong> When the service is required and critical to
+          operation (+2 points)
+        </p>
+        <p>
+          <strong>Refinement:</strong> Use it when a dependency is
+          <strong>critical</strong>, regardless of frequency. Even if used only
+          once, if the object can't function without it, use Constructor
+          Injection.
+        </p>
+
+        <h3>Question 2: When to use Method Injection? ❌</h3>
+        <p>
+          <strong>Incorrect Answer:</strong> "When the service is optional" (-2
+          points)
+        </p>
+        <p>
+          <strong>Correction:</strong> That's Property Injection! Method
+          Injection is for:
+        </p>
+        <ul>
+          <li>Different implementations per call</li>
+          <li>Only ONE operation needs it</li>
+          <li>Maximum flexibility per method</li>
+        </ul>
+
+        <h3>Question 3: Why is naming consistency important? ✅</h3>
+        <p>
+          <strong>Answer:</strong> Developer clarity, compiler needs, avoid
+          errors (+2 points)
+        </p>
+        <p>
+          All correct! If you declare <code>_fieldName</code> but use
+          <code>_differentName</code>, the compiler literally cannot find the
+          variable.
+        </p>
+
+        <h3>Scenario Quiz: Perfect 4/4! ✅</h3>
+        <p><strong>+5 points for perfect application!</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th>Answer</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Database Connection</td>
+              <td>Constructor</td>
+              <td class="blue">✅ Critical dependency</td>
+            </tr>
+            <tr>
+              <td>Email (only in SendReport)</td>
+              <td>Method</td>
+              <td class="blue">✅ One operation</td>
+            </tr>
+            <tr>
+              <td>Theme Preference</td>
+              <td>Property</td>
+              <td class="blue">✅ Optional, runtime change</td>
+            </tr>
+            <tr>
+              <td>Authentication Token</td>
+              <td>Constructor</td>
+              <td class="blue">✅ Required per request</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Final Complete Code</h2>
+        <pre><code>// Interfaces
+public interface ITaskStorage
+{
+    void Save(string name, string desc, DateTime created);
+    void Update(string name, bool completed);
+    void UpdatePriority(string name, string priority);
+}
+
+public interface INotificationService
+{
+    void SendNotification(string message);
+}
+
+public interface ILogger
+{
+    void Log(string message);
+}
+
+// TaskManager - Demonstrates all three DI types
+public class TaskManager
+{
+    public string TaskName { get; set; }
+    public string Description { get; set; }
+    public bool IsCompleted { get; set; }
+    public DateTime CreatedAt { get; set; }
+    
+    // Constructor Injection - Required dependencies
+    private readonly ITaskStorage _taskStorage;
+    private readonly INotificationService _notificationService;
+    
+    public TaskManager(string taskName, string description,
+                       ITaskStorage storage,
+                       INotificationService notifier)
+    {
+        TaskName = taskName;
+        Description = description;
+        IsCompleted = false;
+        CreatedAt = DateTime.Now;
+        _taskStorage = storage;
+        _notificationService = notifier;
+    }
+    
+    public void CreateTask()
+    {
+        _taskStorage.Save(TaskName, Description, CreatedAt);
+        _notificationService.SendNotification($"Task '{TaskName}' created successfully!");
+    }
+    
+    public void CompleteTask()
+    {
+        IsCompleted = true;
+        _taskStorage.Update(TaskName, IsCompleted);
+        _notificationService.SendNotification($"Task '{TaskName}' completed!");
+    }
+    
+    // Method Injection - Flexible per-call dependency
+    public void SetPriority(string priority, ILogger logger)
+    {
+        logger?.Log($"Setting priority {priority} for task {TaskName}");
+        _taskStorage.UpdatePriority(TaskName, priority);
+    }
+    
+    public static void Main()
+    {
+        var storage = new DatabaseStorage();
+        var notifier = new NotificationService();
+        
+        var taskTobeManaged = new TaskManager(
+            "SaveTask",
+            "Saving the Task",
+            storage,
+            notifier
+        );
+        
+        taskTobeManaged.CreateTask();
+        taskTobeManaged.CompleteTask();
+        taskTobeManaged.SetPriority("High", new Logger());
+    }
+}
+
+// Implementation Classes
+public class DatabaseStorage : ITaskStorage
+{
+    public void Save(string name, string desc, DateTime created)
+    {
+        Console.WriteLine($"Saving to database: {name}");
+    }
+    
+    public void Update(string name, bool completed)
+    {
+        Console.WriteLine($"Updating task {name}: Completed = {completed}");
+    }
+    
+    public void UpdatePriority(string name, string priority)
+    {
+        Console.WriteLine($"Updating priority for {name}: {priority}");
+    }
+}
+
+public class NotificationService : INotificationService
+{
+    public void SendNotification(string message)
+    {
+        Console.WriteLine($"📧 Notification: {message}");
+    }
+}
+
+public class Logger : ILogger
+{
+    public void Log(string message)
+    {
+        Console.WriteLine($"[LOG] {message}");
+    }
+}</code></pre>
+
+        <h2>Score Journey Visualization</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Phase</th>
+              <th>Score</th>
+              <th>Change</th>
+              <th>Key Event</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Start</td>
+              <td>50</td>
+              <td>-</td>
+              <td>Fresh start</td>
+            </tr>
+            <tr>
+              <td>Problem Analysis</td>
+              <td>51</td>
+              <td class="blue">+1</td>
+              <td>Good understanding</td>
+            </tr>
+            <tr>
+              <td>Logger Question</td>
+              <td>52</td>
+              <td class="blue">+1</td>
+              <td>Correct answer</td>
+            </tr>
+            <tr>
+              <td>Attempt 1</td>
+              <td>38</td>
+              <td class="red">-14</td>
+              <td>Interface bodies, property fields</td>
+            </tr>
+            <tr>
+              <td>Attempt 2</td>
+              <td>22</td>
+              <td class="red">-16</td>
+              <td>Missing semicolons everywhere</td>
+            </tr>
+            <tr>
+              <td>Attempt 3</td>
+              <td>12</td>
+              <td class="red">-10</td>
+              <td>Name mismatch continues</td>
+            </tr>
+            <tr>
+              <td>Attempt 4</td>
+              <td class="red">3</td>
+              <td class="red">-9</td>
+              <td><strong>LOWEST POINT</strong></td>
+            </tr>
+            <tr>
+              <td>Attempt 5</td>
+              <td>13</td>
+              <td class="blue">+10</td>
+              <td>Finally correct naming!</td>
+            </tr>
+            <tr>
+              <td>Method Injection</td>
+              <td>15</td>
+              <td class="blue">+2</td>
+              <td>Almost perfect</td>
+            </tr>
+            <tr>
+              <td>Main Method</td>
+              <td>20</td>
+              <td class="blue">+5</td>
+              <td>Excellent demonstration</td>
+            </tr>
+            <tr>
+              <td>Knowledge Quiz</td>
+              <td>22</td>
+              <td class="blue">+2</td>
+              <td>Good understanding</td>
+            </tr>
+            <tr>
+              <td>Scenario Quiz</td>
+              <td class="blue">27</td>
+              <td class="blue">+5</td>
+              <td><strong>Perfect 4/4!</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Key Lessons Learned</h2>
+
+        <h3>1. The Naming Pattern That Changes Everything</h3>
+        <pre><code>// The pattern that MUST be consistent:
+
+// 1. DECLARE the field
+private readonly IType _fieldName;
+
+// 2. ACCEPT in constructor  
+public ClassName(IType parameterName)
+
+// 3. ASSIGN parameter to field
+_fieldName = parameterName;
+
+// 4. USE the field
+_fieldName.Method();</code></pre>
+
+        <h3>2. Common Naming Mistakes to Avoid</h3>
+        <ul>
+          <li>
+            ❌ <code>private readonly IType DatabaseStorage</code> → ✅
+            <code>private readonly IType _storage</code>
+          </li>
+          <li>
+            ❌ <code>_IType = value</code> → ✅ <code>_fieldName = value</code>
+          </li>
+          <li>
+            ❌ <code>IType.Method()</code> → ✅ <code>_fieldName.Method()</code>
+          </li>
+          <li>
+            ❌ Declaring: <code>_storage</code> but using:
+            <code>_taskStorage</code>
+          </li>
+        </ul>
+
+        <h3>3. Syntax Rules That Cost Points</h3>
+        <ul>
+          <li>
+            Interfaces: Method signatures end with <code>;</code> not
+            <code>{}</code>
+          </li>
+          <li>Fields: Must end with <code>;</code></li>
+          <li>
+            Assignment: <code>field = parameter;</code> NOT
+            <code>Type parameter;</code>
+          </li>
+          <li>
+            C# Convention: Private fields start with underscore and camelCase
+          </li>
+        </ul>
+
+        <h3>4. DI Type Selection Decision Tree</h3>
+        <pre><code>Is it critical to operation?
+├─ YES → Constructor Injection
+└─ NO → How many methods use it?
+    ├─ Most/All → Constructor Injection
+    ├─ Some → Property Injection  
+    └─ One specific method → Method Injection</code></pre>
+
+        <h3>5. Single Responsibility Principle (SRP)</h3>
+        <p>
+          Before applying DI, ensure each class has ONE responsibility.
+          TaskManager should coordinate tasks, not implement storage,
+          notifications, or logging. SRP makes DI necessary because
+          single-responsibility classes need other classes to do other work.
+        </p>
+
+        <h2>Comparison: Round 1 vs Round 2</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Round 1 (Bank)</th>
+              <th>Round 2 (Task Manager)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Final Score</strong></td>
+              <td>37 points</td>
+              <td>27 points</td>
+            </tr>
+            <tr>
+              <td><strong>Lowest Point</strong></td>
+              <td>38 points</td>
+              <td class="red">3 points</td>
+            </tr>
+            <tr>
+              <td><strong>Main Challenge</strong></td>
+              <td>Understanding concepts</td>
+              <td>Naming consistency</td>
+            </tr>
+            <tr>
+              <td><strong>Biggest Drop</strong></td>
+              <td>-7 points</td>
+              <td class="red">-16 points</td>
+            </tr>
+            <tr>
+              <td><strong>Best Recovery</strong></td>
+              <td>+4 points</td>
+              <td class="blue">+10 points</td>
+            </tr>
+            <tr>
+              <td><strong>Attempts Needed</strong></td>
+              <td>~6 attempts</td>
+              <td>5 attempts</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Humor Through the Pain 😂</h2>
+        <blockquote>
+          <p>
+            "Current Score: 13 points ← All lost due to naming. Not a great way
+            to go down hahahaha. Do forgive me, I use humor to make pain
+            sometimes lighter"
+          </p>
+          <footer>— The Learner, at rock bottom (3 points)</footer>
+        </blockquote>
+
+        <p>
+          This quote perfectly captures the spirit of the learning journey.
+          Going from 52 points to 3 points primarily due to
+          <code>_ITaskStorage</code> vs <code>_taskStorage</code>
+          confusion was painful but created an unforgettable lesson. The humor
+          helped push through the frustration, and the recovery from 3 to 27
+          points showed true persistence!
+        </p>
+
+        <h2>What Makes This Round Different</h2>
+        <ol>
+          <li>
+            <strong>Deeper SRP Understanding:</strong> Took time to understand
+            Single Responsibility Principle
+          </li>
+          <li>
+            <strong>Naming Hell:</strong> The score drop was almost entirely
+            syntax/naming, not conceptual
+          </li>
+          <li>
+            <strong>Persistence Rewarded:</strong> Kept trying despite dropping
+            to 3 points
+          </li>
+          <li>
+            <strong>Perfect Application:</strong> Ended with 4/4 on scenario
+            quiz
+          </li>
+          <li>
+            <strong>Muscle Memory Built:</strong> The pain of naming mistakes
+            ensures they won't be repeated
+          </li>
+        </ol>
+
+        <h2>Conclusion</h2>
+        <p>
+          Round 2 proved that understanding concepts is only half the battle -
+          precise syntax and consistent naming are equally crucial. The journey
+          from 52 → 3 → 27 points demonstrates that mistakes, especially painful
+          ones, create the strongest learning. The learner now has a visceral
+          understanding that:
+        </p>
+
+        <blockquote>
+          <p>
+            <code>private readonly IType _fieldName;</code><br />
+            means you must use <code>_fieldName</code> EVERYWHERE, not
+            <code>_IType</code>, not <code>_differentName</code>, not
+            <code>IType</code> - only <code>_fieldName</code>.
+          </p>
+        </blockquote>
+
+        <p>
+          This lesson, burned in through point loss, will never be forgotten.
+          That's the power of gamified learning with real consequences!
+        </p>
+
+        <div class="alert alert-info">
+          <strong>Next Steps:</strong> With two rounds complete and all three DI
+          types mastered, the learner is ready for Round 3 (E-commerce system),
+          dependency chains, or exploring IoC containers like
+          Microsoft.Extensions.DependencyInjection.
+        </div>
+      </article>
+
+      <!-- Return link -->
+      <span><a href="../../index.html">Main Page</a></span>
+      <span> | </span>
+      <span><a href="./di-round1.html">Round 1: Bank System</a></span>
+    </main>
+    <footer>
+      The
+      <a href="https://git.sr.ht/~sircmpwn/drewdevault.com"
+        >code for this site</a
+      >
+      is <a href="https://opensource.org/licenses/MIT">MIT</a>.
+    </footer>
+  </body>
+</html>
