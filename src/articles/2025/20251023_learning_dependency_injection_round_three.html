@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      Learning Dependency Injection Round 3: E-Commerce Order System
+    </title>
+    <link rel="stylesheet" href="../../asset/drew.min.css" />
+  </head>
+  <body>
+    <h1>
+      Learning Dependency Injection Round 3: E-Commerce Order System
+      <small> <span class="date">21-October-2025</span> by Faizal.Work </small>
+    </h1>
+    <main>
+      <article>
+        <h2>Introduction</h2>
+        <p>
+          Round 3 represents the culmination of the DI learning journey. After
+          the conceptual struggles of Round 1 (Bank System) and the naming
+          nightmare of Round 2 (Task Manager, dropping to 3 points!), Round 3
+          demonstrates mastery. The learner started strong with an outstanding
+          problem analysis and finished with a score of 73 points - the highest
+          of all three rounds.
+        </p>
+
+        <h3>Game Rules (Same as Previous Rounds)</h3>
+        <ul>
+          <li><strong>Starting Points:</strong> 50</li>
+          <li>
+            <strong>Corrections:</strong> -2 to -5 points depending on severity
+          </li>
+          <li><strong>Wins:</strong> +1 to +5 points for correct solutions</li>
+          <li>
+            <strong>Goal:</strong> Master all three DI types with complex
+            dependencies
+          </li>
+        </ul>
+
+        <h2>Phase 0: The Problem - E-Commerce Order System</h2>
+        <p>
+          The most complex scenario yet: an order processing system with SIX
+          dependencies (compared to 2-3 in previous rounds). This tests the
+          ability to classify dependencies correctly and apply the right
+          injection type.
+        </p>
+
+        <h3>The Starting Code</h3>
+        <pre><code>public class OrderProcessor
+{
+    public int OrderId { get; set; }
+    public string CustomerName { get; set; }
+    public decimal TotalAmount { get; set; }
+    public bool IsPaid { get; set; }
+
+    public OrderProcessor(int orderId, string customerName, decimal totalAmount)
+    {
+        OrderId = orderId;
+        CustomerName = customerName;
+        TotalAmount = totalAmount;
+        IsPaid = false;
+    }
+
+    public bool ProcessPayment(string cardNumber)
+    {
+        PaymentGateway gateway = new PaymentGateway(); // ❌ Tight coupling!
+        bool paymentSuccess = gateway.Charge(cardNumber, TotalAmount);
+        
+        if (paymentSuccess)
+        {
+            IsPaid = true;
+            
+            EmailNotifier notifier = new EmailNotifier(); // ❌
+            notifier.SendEmail(CustomerName, "Payment Successful", ...);
+            
+            InventoryManager inventory = new InventoryManager(); // ❌
+            inventory.ReserveItems(OrderId);
+            
+            return true;
+        }
+        return false;
+    }
+
+    public void ShipOrder(string shippingAddress, string carrier)
+    {
+        if (!IsPaid)
+        {
+            throw new Exception("Cannot ship unpaid order!");
+        }
+        
+        AuditLogger logger = new AuditLogger(); // ❌ Only used here
+        logger.Log($"Shipping order {OrderId}...");
+        
+        ShippingService shipper = new ShippingService(); // ❌
+        shipper.CreateShipment(OrderId, shippingAddress, carrier);
+        
+        EmailNotifier notifier = new EmailNotifier(); // ❌ Created again!
+        notifier.SendEmail(CustomerName, "Order Shipped", ...);
+    }
+
+    public void ApplyDiscount(decimal discountPercent)
+    {
+        DiscountCalculator calculator = new DiscountCalculator(); // ❌ Only used here
+        decimal newTotal = calculator.Calculate(TotalAmount, discountPercent);
+        TotalAmount = newTotal;
+        
+        EmailNotifier notifier = new EmailNotifier(); // ❌ Created third time!
+        notifier.SendEmail(CustomerName, "Discount Applied", ...);
+    }
+}</code></pre>
+
+        <h2>Phase 1: Outstanding Problem Analysis (+12 points)</h2>
+        <p><strong>Score: 50 → 62 points</strong></p>
+
+        <p>
+          The learner provided an exceptional analysis, identifying NINE
+          distinct problems:
+        </p>
+
+        <h3>Problems Identified ✅</h3>
+
+        <details>
+          <summary>
+            1. ShipOrder has too many responsibilities (+2 points)
+          </summary>
+          <p>
+            <strong>Analysis:</strong> "ShipOrder → logs → ships → notifies: too
+            many jobs"
+          </p>
+          <p>
+            Correct! The method handles logging, shipping coordination, AND
+            notifications. This violates Single Responsibility Principle.
+          </p>
+        </details>
+
+        <details>
+          <summary>2. Unable to test (+2 points)</summary>
+          <p><strong>Analysis:</strong> "Unable to test"</p>
+          <p>
+            Perfect! Can't mock PaymentGateway, EmailNotifier, or any other
+            dependency. All the "new" keywords create tight coupling that
+            prevents proper unit testing.
+          </p>
+        </details>
+
+        <details>
+          <summary>
+            3. EmailNotifier recreated multiple times (+2 points)
+          </summary>
+          <p>
+            <strong>Analysis:</strong> "EmailNotifier declared multiple time"
+          </p>
+          <p>
+            Excellent catch! EmailNotifier is created THREE times (in
+            ProcessPayment, ShipOrder, and ApplyDiscount). This is wasteful and
+            could lead to inconsistent configuration if the notifier needed
+            setup.
+          </p>
+        </details>
+
+        <details>
+          <summary>
+            4. Liskov Substitution Principle (+1 point, partial)
+          </summary>
+          <p>
+            <strong>Analysis:</strong> "Liskov Substitution Principle ← I know
+            something is related to this but not sure what"
+          </p>
+          <p>
+            Good intuition! LSP isn't directly violated, but the learner sensed
+            that we need interfaces for proper substitutability. Once we create
+            IPaymentGateway, we can substitute different implementations
+            (Stripe, PayPal, etc.) without breaking the code.
+          </p>
+        </details>
+
+        <details>
+          <summary>
+            5. DiscountCalculator perfect for Method Injection (+2 points)
+          </summary>
+          <p>
+            <strong>Analysis:</strong> "Calculator is only used once, best make
+            it a method injection"
+          </p>
+          <p>
+            Perfect! DiscountCalculator is ONLY used in ApplyDiscount() -
+            textbook case for Method Injection.
+          </p>
+        </details>
+
+        <details>
+          <summary>6. OrderProcessor violates SRP (+2 points)</summary>
+          <p>
+            <strong>Analysis:</strong> "OrderProcessor class has too many
+            responsibilities: Instantiates, Processes payment, Inventory
+            management, Shipping, notifying"
+          </p>
+          <p>
+            Outstanding! Identified ALL five responsibilities. OrderProcessor
+            should coordinate these operations, not implement them. Each
+            responsibility should be delegated to injected dependencies.
+          </p>
+        </details>
+
+        <details>
+          <summary>7. Open/Closed Principle violation (+2 points)</summary>
+          <p>
+            <strong>Analysis:</strong> "Open/Close: to change the payment
+            method, we have to change the whole class → not modify, but extend"
+          </p>
+          <p>
+            Brilliant! This shows advanced understanding. The hardcoded
+            <code>PaymentGateway gateway = new PaymentGateway();</code> means we
+            must MODIFY OrderProcessor to add PayPal support. With DI and
+            <code>IPaymentGateway</code>, we can EXTEND with new payment methods
+            without touching OrderProcessor.
+          </p>
+        </details>
+
+        <details>
+          <summary>8. Lack of validation (+2 points)</summary>
+          <p><strong>Analysis:</strong> "Lack of Validation"</p>
+          <p>Good catch! No validation for:</p>
+          <ul>
+            <li>Empty/null card numbers</li>
+            <li>Negative amounts or discount percentages</li>
+            <li>Null/empty shipping addresses</li>
+            <li>Invalid order states</li>
+          </ul>
+        </details>
+
+        <details>
+          <summary>
+            9. Security concern: Credit card exposure (+2 points)
+          </summary>
+          <p>
+            <strong>Analysis:</strong> "credit card number is exposed ← this one
+            I am unsure how to resolve this"
+          </p>
+          <p>
+            Excellent security awareness! The card number is passed as plain
+            text and could be logged. Solutions include:
+          </p>
+          <ul>
+            <li>Tokenization (replace card with secure token)</li>
+            <li>PCI-compliant payment processor (never handle raw cards)</li>
+            <li>Encryption at rest and in transit</li>
+            <li>Masking in logs (show only last 4 digits)</li>
+          </ul>
+        </details>
+
+        <div class="alert alert-info">
+          <strong>Analysis Quality:</strong> This was the most comprehensive
+          problem identification across all three rounds. The learner
+          demonstrated understanding of:
+          <ul>
+            <li>SOLID principles (SRP, OCP, LSP)</li>
+            <li>Security concerns</li>
+            <li>Testability issues</li>
+            <li>Design patterns</li>
+          </ul>
+        </div>
+
+        <h2>Phase 2: DI Strategy Decisions (+9 points, -3 points)</h2>
+        <p><strong>Score: 62 → 68 points</strong></p>
+
+        <p>
+          With SIX dependencies to classify, this was the most complex
+          decision-making round:
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Dependency</th>
+              <th>Learner's Choice</th>
+              <th>Correct Choice</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>PaymentGateway</td>
+              <td>Constructor</td>
+              <td>Constructor</td>
+              <td class="blue">✅ +2 points</td>
+            </tr>
+            <tr>
+              <td>EmailNotifier</td>
+              <td>Constructor</td>
+              <td>Property (debatable)</td>
+              <td class="yellow">⚠️ +1 point</td>
+            </tr>
+            <tr>
+              <td>InventoryManager</td>
+              <td>Property</td>
+              <td>Constructor</td>
+              <td class="red">❌ -2 points</td>
+            </tr>
+            <tr>
+              <td>AuditLogger</td>
+              <td>Method</td>
+              <td>Method</td>
+              <td class="blue">✅ +2 points</td>
+            </tr>
+            <tr>
+              <td>ShippingService</td>
+              <td>Constructor</td>
+              <td>Property</td>
+              <td class="red">❌ -1 point</td>
+            </tr>
+            <tr>
+              <td>DiscountCalculator</td>
+              <td>Method</td>
+              <td>Method</td>
+              <td class="blue">✅ +2 points</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Detailed Analysis</h3>
+
+        <h4>✅ PaymentGateway → Constructor</h4>
+        <p>
+          <strong>Reasoning:</strong> Critical for processing orders, used in
+          core functionality.
+        </p>
+        <p>
+          <strong>Correct!</strong> Payment processing is essential to the order
+          system.
+        </p>
+
+        <h4>⚠️ EmailNotifier → Constructor (Debatable)</h4>
+        <p>
+          <strong>Learner's reasoning:</strong> Used in 3 methods, frequently
+          needed.
+        </p>
+        <p>
+          <strong>Alternative view:</strong> Email is often optional - business
+          logic should work even if email fails. Property Injection allows
+          disabling in tests or when email service is down.
+        </p>
+        <p>
+          <strong>Verdict:</strong> Constructor is defensible for
+          frequently-used dependencies. Property would be more flexible. Awarded
+          +1 for reasonable choice.
+        </p>
+
+        <h4>❌ InventoryManager → Property (Should be Constructor)</h4>
+        <p>
+          <strong>Problem:</strong> Inventory management is critical! Can't
+          process payment without checking/reserving inventory. Selling items
+          you don't have is catastrophic.
+        </p>
+        <p>
+          <strong>Correct:</strong> Constructor Injection - as critical as
+          payment processing.
+        </p>
+
+        <h4>✅ AuditLogger → Method</h4>
+        <p><strong>Reasoning:</strong> Only used in ShipOrder method.</p>
+        <p><strong>Perfect!</strong> Textbook Method Injection use case.</p>
+
+        <h4>❌ ShippingService → Constructor (Should be Property)</h4>
+        <p>
+          <strong>Problem:</strong> ShippingService is ONLY used in ShipOrder().
+          Most methods don't need it.
+        </p>
+        <p>
+          <strong>Correct:</strong> Property Injection (set when shipping is
+          needed) or Method Injection (pass to ShipOrder when called).
+          Constructor is overkill.
+        </p>
+
+        <h4>✅ DiscountCalculator → Method</h4>
+        <p><strong>Reasoning:</strong> Only used in ApplyDiscount method.</p>
+        <p><strong>Perfect!</strong> Another textbook Method Injection case.</p>
+
+        <h2>Phase 3: Implementation Attempt 1 (+15 points, -13 points)</h2>
+        <p><strong>Score: 68 → 53 points</strong></p>
+
+        <h3>Critical Issues Found</h3>
+
+        <details>
+          <summary>Issue 1: Empty Interfaces (-5 points)</summary>
+          <pre><code>public interface IPaymentGateway { } // ❌ No methods!
+public interface IEmailNotifier { } // ❌ Empty!</code></pre>
+
+          <p>
+            <strong>Problem:</strong> Interfaces without methods are useless
+            contracts.
+          </p>
+
+          <p><strong>Fix:</strong> Add method signatures:</p>
+          <pre><code>public interface IPaymentGateway 
+{
+    bool Charge(string cardNumber, decimal amount);
+}
+
+public interface IEmailNotifier 
+{
+    void SendEmail(string to, string subject, string body);
+}</code></pre>
+        </details>
+
+        <details>
+          <summary>
+            Issue 2: Public Constructor-Injected Fields (-2 points)
+          </summary>
+          <pre><code>public readonly IPaymentGateway _paymentGateway; // ❌ Should be private!</code></pre>
+
+          <p>
+            <strong>Problem:</strong> Constructor-injected dependencies should
+            be encapsulated.
+          </p>
+
+          <p><strong>Fix:</strong></p>
+          <pre><code>private readonly IPaymentGateway _paymentGateway; // ✅</code></pre>
+        </details>
+
+        <details>
+          <summary>Issue 3: Still Using "new" (-3 points)</summary>
+          <pre><code>public bool ProcessPayment(string cardNumber)
+{
+    // ...
+    EmailNotifier notifier = new EmailNotifier(); // ❌ Still tightly coupled!
+    notifier.SendEmail(...);
+}</code></pre>
+
+          <p>
+            <strong>Problem:</strong> The whole point of DI is to avoid creating
+            dependencies!
+          </p>
+
+          <p><strong>Fix:</strong> Use the Property Injection:</p>
+          <pre><code>public IEmailNotifier EmailNotifier { get; set; } // Property
+
+public bool ProcessPayment(string cardNumber)
+{
+    // ...
+    EmailNotifier?.SendEmail(...); // ✅ Use the property
+}</code></pre>
+        </details>
+
+        <details>
+          <summary>
+            Issue 4: Property Naming with Underscore (-2 points)
+          </summary>
+          <pre><code>public IShippingService _shipper { get; set; } // ❌ Wrong convention</code></pre>
+
+          <p>
+            <strong>Problem:</strong> Properties use PascalCase without
+            underscore. Underscores are for private fields.
+          </p>
+
+          <p><strong>Fix:</strong></p>
+          <pre><code>public IShippingService ShippingService { get; set; } // ✅</code></pre>
+        </details>
+
+        <details>
+          <summary>
+            Issue 5: Inconsistent EmailNotifier Approach (-1 point)
+          </summary>
+          <p>
+            The learner injected EmailNotifier as a method parameter in
+            ShipOrder and ApplyDiscount (Method Injection), but it was meant to
+            be Property Injection since it's used across multiple methods.
+          </p>
+
+          <p><strong>Two valid approaches:</strong></p>
+
+          <p><strong>Approach A (Property - Recommended):</strong></p>
+          <pre><code>public IEmailNotifier EmailNotifier { get; set; }
+
+public void ShipOrder(...)
+{
+    EmailNotifier?.SendEmail(...);
+}
+
+public void ApplyDiscount(...)
+{
+    EmailNotifier?.SendEmail(...);
+}</code></pre>
+
+          <p><strong>Approach B (Method):</strong></p>
+          <pre><code>public void ShipOrder(..., IEmailNotifier notifier)
+{
+    notifier?.SendEmail(...);
+}
+
+public void ApplyDiscount(..., IEmailNotifier notifier)
+{
+    notifier?.SendEmail(...);
+}</code></pre>
+        </details>
+
+        <h2>
+          Phase 4: Implementation Attempt 2 (Almost Perfect!) (+17 points, -3
+          points)
+        </h2>
+        <p><strong>Score: 53 → 67 points</strong></p>
+
+        <h3>What Was Fixed Perfectly ✅</h3>
+        <ul>
+          <li>
+            <strong>+5 points:</strong> All interfaces have proper method
+            signatures
+          </li>
+          <li>
+            <strong>+2 points:</strong> Constructor injection uses
+            <code>private readonly</code>
+          </li>
+          <li>
+            <strong>+3 points:</strong> Property injection properly set up
+          </li>
+          <li>
+            <strong>+3 points:</strong> Removed all <code>new</code> keywords
+          </li>
+          <li>
+            <strong>+2 points:</strong> Using injected dependencies correctly
+          </li>
+          <li>
+            <strong>+2 points:</strong> Method injection implemented for logger
+            and calculator
+          </li>
+        </ul>
+
+        <h3>Minor Issues Remaining</h3>
+
+        <details>
+          <summary>Missing Null Check on ShippingService (-2 points)</summary>
+          <pre><code>ShippingService.CreateShipment(OrderId, shippingAddress, carrier); // ❌</code></pre>
+
+          <p>
+            Since ShippingService is Property Injection (optional), it could be
+            null!
+          </p>
+
+          <p><strong>Fix:</strong></p>
+          <pre><code>ShippingService?.CreateShipment(OrderId, shippingAddress, carrier); // ✅</code></pre>
+        </details>
+
+        <details>
+          <summary>Calculator Null Check Type Mismatch (-1 point)</summary>
+          <pre><code>decimal newTotal = calculator?.Calculate(TotalAmount, discountPercent); // ❌</code></pre>
+
+          <p>
+            <strong>Problem:</strong>
+            <code>calculator?.Calculate(...)</code> returns
+            <code>decimal?</code> (nullable), but newTotal is
+            <code>decimal</code> (non-nullable).
+          </p>
+
+          <p><strong>Fix:</strong> Use null-coalescing operator:</p>
+          <pre><code>decimal newTotal = calculator?.Calculate(TotalAmount, discountPercent) ?? TotalAmount; // ✅</code></pre>
+        </details>
+
+        <h2>Phase 5: Perfect Implementation (+6 points)</h2>
+        <p><strong>Score: 67 → 73 points</strong></p>
+
+        <h3>Final Fixes Applied</h3>
+        <ul>
+          <li>
+            <strong>+2 points:</strong> Added <code>?.</code> to ShippingService
+            call
+          </li>
+          <li><strong>+3 points:</strong> Fixed calculator null-coalescing</li>
+          <li>
+            <strong>+1 point:</strong> Added comprehensive Main method
+            demonstrating all DI types
+          </li>
+        </ul>
+
+        <h3>The Perfect Main Method</h3>
+        <pre><code>public static void Main()
+{
+    // Create implementations
+    var gateway = new PaymentGateway();
+    var inventory = new InventoryManager();
+    
+    // Constructor Injection - critical dependencies
+    var order = new OrderProcessor(
+        orderId: 1001,
+        customerName: "Alice",
+        totalAmount: 250.00m,
+        paymentGateway: gateway,
+        inventoryManager: inventory
+    )
+    {
+        // Property Injection - optional features
+        EmailNotifier = new EmailNotifier(),
+        ShippingService = new ShippingService()
+    };
+    
+    // Process payment
+    order.ProcessPayment("1234-5678-9012-3456");
+    
+    // Method Injection - pass logger to specific method
+    order.ShipOrder("123 Main St", "FedEx", new AuditLogger());
+    
+    // Method Injection - pass calculator to specific method
+    order.ApplyDiscount(10m, new DiscountCalculator());
+}</code></pre>
+
+        <h2>Final Complete Code</h2>
+        <pre><code>// ==================== INTERFACES ====================
+
+public interface IPaymentGateway
+{
+    bool Charge(string cardNumber, decimal amount);
+}
+
+public interface IEmailNotifier
+{
+    void SendEmail(string to, string subject, string body);
+}
+
+public interface IInventoryManager
+{
+    void ReserveItems(int orderId);
+}
+
+public interface IAuditLogger
+{
+    void Log(string message);
+}
+
+public interface IShippingService
+{
+    void CreateShipment(int orderId, string address, string carrier);
+}
+
+public interface IDiscountCalculator
+{
+    decimal Calculate(decimal amount, decimal percent);
+}
+
+// ==================== ORDER PROCESSOR ====================
+
+public class OrderProcessor
+{
+    // Constructor Injection - Critical dependencies
+    private readonly IPaymentGateway _paymentGateway;
+    private readonly IInventoryManager _inventoryManager;
+    
+    // Properties
+    public int OrderId { get; set; }
+    public string CustomerName { get; set; }
+    public decimal TotalAmount { get; set; }
+    public bool IsPaid { get; set; }
+
+    // Property Injection - Optional dependencies
+    public IShippingService ShippingService { get; set; }
+    public IEmailNotifier EmailNotifier { get; set; }
+
+    public OrderProcessor(
+        int orderId,
+        string customerName,
+        decimal totalAmount,
+        IPaymentGateway paymentGateway,
+        IInventoryManager inventoryManager)
+    {
+        OrderId = orderId;
+        CustomerName = customerName;
+        TotalAmount = totalAmount;
+        IsPaid = false;
+        _paymentGateway = paymentGateway;
+        _inventoryManager = inventoryManager;
+    }
+
+    public bool ProcessPayment(string cardNumber)
+    {
+        bool paymentSuccess = _paymentGateway.Charge(cardNumber, TotalAmount);
+
+        if (paymentSuccess)
+        {
+            IsPaid = true;
+
+            EmailNotifier?.SendEmail(CustomerName, "Payment Successful",
+                $"Your payment of ${TotalAmount} was processed.");
+
+            _inventoryManager.ReserveItems(OrderId);
+
+            return true;
+        }
+        return false;
+    }
+
+    // Method Injection - Logger only needed here
+    public void ShipOrder(string shippingAddress, string carrier, IAuditLogger logger)
+    {
+        if (!IsPaid)
+        {
+            throw new Exception("Cannot ship unpaid order!");
+        }
+
+        logger?.Log($"Shipping order {OrderId} to {shippingAddress} via {carrier}");
+
+        ShippingService?.CreateShipment(OrderId, shippingAddress, carrier);
+
+        EmailNotifier?.SendEmail(CustomerName, "Order Shipped",
+            $"Your order has been shipped to {shippingAddress}");
+    }
+
+    // Method Injection - Calculator only needed here
+    public void ApplyDiscount(decimal discountPercent, IDiscountCalculator calculator)
+    {
+        decimal newTotal = calculator?.Calculate(TotalAmount, discountPercent) ?? TotalAmount;
+        TotalAmount = newTotal;
+
+        EmailNotifier?.SendEmail(CustomerName, "Discount Applied",
+            $"Your new total is ${TotalAmount}");
+    }
+    
+    // ==================== MAIN METHOD ====================
+    
+    public static void Main()
+    {
+        // Create implementations
+        var gateway = new PaymentGateway();
+        var inventory = new InventoryManager();
+        
+        // Constructor Injection
+        var order = new OrderProcessor(
+            orderId: 1001,
+            customerName: "Alice",
+            totalAmount: 250.00m,
+            paymentGateway: gateway,
+            inventoryManager: inventory
+        )
+        {
+            // Property Injection
+            EmailNotifier = new EmailNotifier(),
+            ShippingService = new ShippingService()
+        };
+        
+        // Process payment
+        order.ProcessPayment("1234-5678-9012-3456");
+        
+        // Method Injection - pass logger to ShipOrder
+        order.ShipOrder("123 Main St", "FedEx", new AuditLogger());
+        
+        // Method Injection - pass calculator to ApplyDiscount
+        order.ApplyDiscount(10m, new DiscountCalculator());
+    }
+}
+
+// ==================== IMPLEMENTATIONS ====================
+
+public class PaymentGateway : IPaymentGateway
+{
+    public bool Charge(string cardNumber, decimal amount)
+    {
+        Console.WriteLine($"Charging ${amount} to card {cardNumber}");
+        return true; // Simulate success
+    }
+}
+
+public class EmailNotifier : IEmailNotifier
+{
+    public void SendEmail(string to, string subject, string body)
+    {
+        Console.WriteLine($"📧 Email to {to}: {subject}");
+    }
+}
+
+public class InventoryManager : IInventoryManager
+{
+    public void ReserveItems(int orderId)
+    {
+        Console.WriteLine($"Items reserved for order {orderId}");
+    }
+}
+
+public class AuditLogger : IAuditLogger
+{
+    public void Log(string message)
+    {
+        Console.WriteLine($"[AUDIT] {message}");
+    }
+}
+
+public class ShippingService : IShippingService
+{
+    public void CreateShipment(int orderId, string address, string carrier)
+    {
+        Console.WriteLine($"Shipment created: Order {orderId} to {address} via {carrier}");
+    }
+}
+
+public class DiscountCalculator : IDiscountCalculator
+{
+    public decimal Calculate(decimal amount, decimal percent)
+    {
+        return amount - (amount * percent / 100);
+    }
+}</code></pre>
+
+        <h2>Score Journey Visualization</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Phase</th>
+              <th>Score</th>
+              <th>Change</th>
+              <th>Key Event</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Start</td>
+              <td>50</td>
+              <td>-</td>
+              <td>Fresh start</td>
+            </tr>
+            <tr>
+              <td>Problem Analysis</td>
+              <td class="blue">62</td>
+              <td class="blue">+12</td>
+              <td>Outstanding 9-point analysis!</td>
+            </tr>
+            <tr>
+              <td>DI Strategy</td>
+              <td>68</td>
+              <td class="blue">+6</td>
+              <td>Minor corrections needed</td>
+            </tr>
+            <tr>
+              <td>Implementation Attempt 1</td>
+              <td>53</td>
+              <td class="red">-15</td>
+              <td>Empty interfaces, public fields</td>
+            </tr>
+            <tr>
+              <td>Implementation Attempt 2</td>
+              <td>67</td>
+              <td class="blue">+14</td>
+              <td>Major fixes applied</td>
+            </tr>
+            <tr>
+              <td>Final Perfect Code</td>
+              <td class="blue">73</td>
+              <td class="blue">+6</td>
+              <td><strong>Highest score achieved!</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Three-Round Comparison</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Round 1 (Bank)</th>
+              <th>Round 2 (Tasks)</th>
+              <th>Round 3 (E-Commerce)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Starting Score</strong></td>
+              <td>50</td>
+              <td>50</td>
+              <td>50</td>
+            </tr>
+            <tr>
+              <td><strong>Lowest Score</strong></td>
+              <td>38</td>
+              <td class="red">3</td>
+              <td>53</td>
+            </tr>
+            <tr>
+              <td><strong>Final Score</strong></td>
+              <td>37</td>
+              <td>27</td>
+              <td class="blue">73</td>
+            </tr>
+            <tr>
+              <td><strong>Dependencies</strong></td>
+              <td>2 (Email, Bank)</td>
+              <td>2 (Storage, Notification)</td>
+              <td>
+                6 (Payment, Email, Inventory, Logger, Shipping, Calculator)
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Main Challenge</strong></td>
+              <td>Understanding concepts</td>
+              <td>Naming consistency</td>
+              <td>Complex dependency classification</td>
+            </tr>
+            <tr>
+              <td><strong>Biggest Drop</strong></td>
+              <td>-7 points</td>
+              <td class="red">-16 points</td>
+              <td>-15 points</td>
+            </tr>
+            <tr>
+              <td><strong>Best Recovery</strong></td>
+              <td>+4 points</td>
+              <td>+10 points</td>
+              <td class="blue">+14 points</td>
+            </tr>
+            <tr>
+              <td><strong>Attempts to Completion</strong></td>
+              <td>~6 attempts</td>
+              <td>5 attempts</td>
+              <td>3 attempts</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Key Lessons from Round 3</h2>
+
+        <h3>1. Dependency Classification Framework</h3>
+        <p>With 6 dependencies, a clear decision framework is essential:</p>
+
+        <pre><code>For each dependency, ask:
+
+1. Is it CRITICAL to core operation?
+   ├─ YES: Can the class function without it?
+   │   ├─ NO → Constructor Injection
+   │   └─ YES → Keep asking
+   └─ NO → Keep asking
+
+2. Is it used in MOST/ALL methods?
+   ├─ YES → Constructor Injection
+   └─ NO → Keep asking
+
+3. Is it used in MULTIPLE methods?
+   ├─ YES → Property Injection (optional feature)
+   └─ NO → Keep asking
+
+4. Is it used in ONE specific method?
+   └─ YES → Method Injection</code></pre>
+
+        <h3>2. Real-World Example Decisions</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Dependency</th>
+              <th>Critical?</th>
+              <th>Usage</th>
+              <th>Decision</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>PaymentGateway</td>
+              <td class="red">YES</td>
+              <td>ProcessPayment</td>
+              <td class="blue"><strong>Constructor</strong></td>
+            </tr>
+            <tr>
+              <td>InventoryManager</td>
+              <td class="red">YES</td>
+              <td>ProcessPayment</td>
+              <td class="blue"><strong>Constructor</strong></td>
+            </tr>
+            <tr>
+              <td>EmailNotifier</td>
+              <td class="yellow">Debatable</td>
+              <td>3 methods</td>
+              <td class="yellow"><strong>Property</strong> (or Constructor)</td>
+            </tr>
+            <tr>
+              <td>ShippingService</td>
+              <td class="yellow">NO</td>
+              <td>1 method</td>
+              <td class="yellow"><strong>Property</strong> (optional)</td>
+            </tr>
+            <tr>
+              <td>AuditLogger</td>
+              <td class="yellow">NO</td>
+              <td>ShipOrder only</td>
+              <td class="blue"><strong>Method</strong></td>
+            </tr>
+            <tr>
+              <td>DiscountCalculator</td>
+              <td class="yellow">NO</td>
+              <td>ApplyDiscount only</td>
+              <td class="blue"><strong>Method</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3. The Null-Safety Pattern</h3>
+        <p>
+          With Property and Method injection, always use null-safe operators:
+        </p>
+
+        <pre><code>// Property Injection - could be null
+EmailNotifier?.SendEmail(...);  // If null, skip
+ShippingService?.CreateShipment(...);  // If null, skip
+
+// Method Injection - caller should provide, but be safe
+logger?.Log(...);  // If null, skip
+decimal result = calculator?.Calculate(...) ?? defaultValue;  // If null, use default</code></pre>
+
+        <h3>4. SOLID Principles Internalized</h3>
+        <p>Round 3 demonstrated deep understanding of SOLID:</p>
+
+        <ul>
+          <li>
+            <strong>S</strong>ingle Responsibility: OrderProcessor coordinates,
+            doesn't implement
+          </li>
+          <li>
+            <strong>O</strong>pen/Closed: Can add PayPal without modifying
+            OrderProcessor
+          </li>
+          <li>
+            <strong>L</strong>iskov Substitution: Any IPaymentGateway works
+          </li>
+          <li>
+            <strong>I</strong>nterface Segregation: Each interface has focused
+            methods
+          </li>
+          <li>
+            <strong>D</strong>ependency Inversion: OrderProcessor depends on
+            abstractions, not concretions
+          </li>
+        </ul>
+
+        <h3>5. The Pattern is Now Muscle Memory</h3>
+        <p>Evidence of mastery:</p>
+
+        <ul>
+          <li>Only 3 attempts to complete (vs 6 in Round 1)</li>
+          <li>No naming confusion (the Round 2 pain paid off!)</li>
+          <li>Outstanding problem analysis from the start</li>
+          <li>Quick fixes when issues identified</li>
+          <li>Clean, production-ready final code</li>
+        </ul>
+
+        <h2>Growth Across Three Rounds</h2>
+
+        <h3>Round 1: Foundation</h3>
+        <blockquote>
+          <p>"What's Dependency Injection? Why do I need interfaces?"</p>
+        </blockquote>
+        <ul>
+          <li>Struggled with basic concepts</li>
+          <li>Confused about when to inject vs create</li>
+          <li>Final score: 37 points</li>
+        </ul>
+
+        <h3>Round 2: The Crucible</h3>
+        <blockquote>
+          <p>
+            "I understand DI concepts, but `_ITaskStorage` vs `_taskStorage`?!
+            😭"
+          </p>
+          <footer>—Dropped to 3 points</footer>
+        </blockquote>
+        <ul>
+          <li>Concepts understood, syntax struggled</li>
+          <li>The naming nightmare (52 → 3 → 27 points)</li>
+          <li>Pain created unforgettable lessons</li>
+          <li>Final score: 27 points</li>
+        </ul>
+
+        <h3>Round 3: Mastery</h3>
+        <blockquote>
+          <p>
+            "I got this. Constructor here, Property there, Method for these
+            two."
+          </p>
+        </blockquote>
+        <ul>
+          <li>Outstanding problem analysis (+12 points immediately!)</li>
+          <li>Handled 6 dependencies with confidence</li>
+          <li>Minor syntax issues quickly fixed</li>
+          <li>Clean, professional code</li>
+          <li>Final score: 73 points 🏆</li>
+        </ul>
+
+        <h2>What Makes Round 3 Special</h2>
+
+        <ol>
+          <li>
+            <strong>Complexity Handled Well:</strong> 6 dependencies vs 2-3 in
+            previous rounds
+          </li>
+          <li>
+            <strong>SOLID Principles Applied:</strong> Identified OCP and SRP
+            violations
+          </li>
+          <li>
+            <strong>Security Awareness:</strong> Credit card exposure concern
+          </li>
+          <li>
+            <strong>Minimal Guidance Needed:</strong> Self-corrected most issues
+          </li>
+          <li>
+            <strong>Highest Score Achieved:</strong> 73 points (previous best:
+            42 in Round 2)
+          </li>
+          <li>
+            <strong>Production-Ready Code:</strong> Could be deployed with minor
+            additions
+          </li>
+        </ol>
+
+        <h2>Conclusion</h2>
+
+        <p>
+          Round 3 represents the culmination of the learning journey. The pain
+          from Round 2's naming disasters created muscle memory that shone
+          through in Round 3. The learner demonstrated not just DI proficiency,
+          but deep understanding of software design principles.
+        </p>
+
+        <p>The score progression tells the story:</p>
+        <ul>
+          <li><strong>Round 1:</strong> 37 points - Learning the basics</li>
+          <li>
+            <strong>Round 2:</strong> 27 points - Pain creates memory (dropped
+            to 3!)
+          </li>
+          <li><strong>Round 3:</strong> 73 points - Mastery achieved 🎓</li>
+        </ul>
+
+        <p>
+          With manual Dependency Injection mastered, the learner is ready for
+          the next level: IoC Containers, where frameworks automatically manage
+          dependencies using the same principles learned here.
+        </p>
+
+        <div class="alert alert-info">
+          <strong>Next Steps:</strong> Deep dive into IoC Containers with
+          Microsoft.Extensions.DependencyInjection, exploring service lifetimes
+          (Transient, Scoped, Singleton) and automatic dependency resolution.
+        </div>
+      </article>
+
+      <!-- Return links -->
+      <span><a href="../../index.html">Main Page</a></span>
+    </main>
+    <footer>
+      The
+      <a href="https://git.sr.ht/~sircmpwn/drewdevault.com"
+        >code for this site</a
+      >
+      is <a href="https://opensource.org/licenses/MIT">MIT</a>.
+    </footer>
+  </body>
+</html>
