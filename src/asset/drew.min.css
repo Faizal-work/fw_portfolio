@@ -15,6 +15,11 @@ h1 small {
   display: block;
   font-size: 1rem;
 }
+h2 {
+  margin-top: 2rem;
+  border-bottom: 2px solid #333;
+  padding-bottom: 0.5rem;
+}
 .index {
   display: flex;
   flex-direction: row;
@@ -108,6 +113,7 @@ pre {
   margin: 0 -1rem;
   max-width: 100%;
   overflow-x: auto;
+  line-height: 1.4;
 }
 pre .cp {
   color: #800;
@@ -138,6 +144,42 @@ pre .gd {
 pre .gu {
   color: blue;
 }
+
+/* Enhanced code highlighting for differences */
+pre .removed,
+pre .error {
+  background-color: #ffd7d7;
+  display: inline-block;
+  padding: 0 0.2rem;
+  border-left: 3px solid #d32f2f;
+}
+
+pre .added,
+pre .correct {
+  background-color: #d7ffd7;
+  display: inline-block;
+  padding: 0 0.2rem;
+  border-left: 3px solid #388e3c;
+}
+
+pre .highlight,
+pre .changed {
+  background-color: #fff9c4;
+  display: inline-block;
+  padding: 0 0.2rem;
+  border-left: 3px solid #f57f17;
+}
+
+pre .comment-error {
+  color: #d32f2f;
+  font-weight: bold;
+}
+
+pre .comment-correct {
+  color: #388e3c;
+  font-weight: bold;
+}
+
 .webring {
   margin-top: 2rem;
 }
@@ -192,11 +234,18 @@ summary {
   background-color: #eee;
   padding: 0.25rem 1rem;
   margin: 0 -1rem;
+  font-weight: bold;
+}
+summary:hover {
+  background-color: #ddd;
 }
 details[open] {
   border-bottom: 1rem solid #eee;
   margin: 0 -1rem 1rem;
   padding: 0 1rem;
+}
+details[open] summary {
+  margin-bottom: 1rem;
 }
 .text-center {
   text-align: center;
@@ -246,6 +295,7 @@ table {
   border: 1px solid grey;
   font-size: 12pt;
   border-collapse: collapse;
+  width: 100%;
 }
 table thead th,
 table tfoot th {
@@ -267,4 +317,84 @@ td.yellow {
 }
 td.blue {
   background: #cfe2ff;
+}
+
+/* Table of Contents Styling */
+.toc {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 1rem;
+  margin: 2rem 0;
+  border-radius: 5px;
+}
+.toc h2 {
+  margin-top: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.toc ol {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+.toc li {
+  margin: 0.5rem 0;
+}
+.toc a {
+  text-decoration: none;
+  color: #0066cc;
+}
+.toc a:hover {
+  text-decoration: underline;
+}
+
+/* Score badge */
+.score-badge {
+  display: inline-block;
+  background: #4caf50;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+.score-badge.penalty {
+  background: #f44336;
+}
+.score-badge.bonus {
+  background: #2196f3;
+}
+
+/* Legend for code highlighting */
+.code-legend {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 0.75rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  border-radius: 3px;
+}
+.code-legend-item {
+  display: inline-block;
+  margin-right: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.code-legend-box {
+  display: inline-block;
+  width: 20px;
+  height: 12px;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+.code-legend-box.error {
+  background: #ffd7d7;
+  border-left: 3px solid #d32f2f;
+}
+.code-legend-box.correct {
+  background: #d7ffd7;
+  border-left: 3px solid #388e3c;
+}
+.code-legend-box.highlight {
+  background: #fff9c4;
+  border-left: 3px solid #f57f17;
 }

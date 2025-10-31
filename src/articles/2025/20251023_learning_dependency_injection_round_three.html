@@ -38,13 +38,64 @@
           </li>
         </ul>
 
-        <h2>Phase 0: The Problem - E-Commerce Order System</h2>
+        <!-- Table of Contents -->
+        <div class="toc" id="toc">
+          <h2>📑 Table of Contents</h2>
+          <ol>
+            <li>
+              <a href="#initial-code"
+                >The Initial Problem (E-Commerce Order System)</a
+              >
+            </li>
+            <li>
+              <a href="#learning-journey">The Learning Journey</a>
+              <ol>
+                <li>
+                  <a href="#phase1"
+                    >Phase 1: Outstanding Problem Analysis (+12 points)</a
+                  >
+                </li>
+                <li><a href="#phase2">Phase 2: DI Strategy Decisions</a></li>
+                <li><a href="#phase3">Phase 3: Implementation Attempt 1</a></li>
+                <li><a href="#phase4">Phase 4: Implementation Attempt 2</a></li>
+                <li><a href="#phase5">Phase 5: Perfect Implementation</a></li>
+              </ol>
+            </li>
+            <li>
+              <a href="#final-code">The Final Solution (Complete Code)</a>
+            </li>
+            <li><a href="#score-journey">Score Journey Visualization</a></li>
+            <li><a href="#comparison">Three-Round Comparison</a></li>
+            <li><a href="#key-lessons">Key Lessons from Round 3</a></li>
+            <li><a href="#growth">Growth Across Three Rounds</a></li>
+            <li><a href="#conclusion">Conclusion</a></li>
+          </ol>
+        </div>
+
+        <h2 id="initial-code">The Initial Problem: E-Commerce Order System</h2>
         <p>
-          The most complex scenario yet: an order processing system with SIX
-          dependencies (compared to 2-3 in previous rounds). This tests the
-          ability to classify dependencies correctly and apply the right
-          injection type.
+          The most complex scenario yet: an order processing system with
+          <strong>SIX dependencies</strong> (compared to 2-3 in previous
+          rounds). This tests the ability to classify dependencies correctly and
+          apply the right injection type. This is the
+          <strong>BEFORE</strong> state:
         </p>
+
+        <div class="code-legend">
+          <strong>Code Highlighting Legend:</strong><br />
+          <span class="code-legend-item">
+            <span class="code-legend-box error"></span>
+            <span>Problems / Errors</span>
+          </span>
+          <span class="code-legend-item">
+            <span class="code-legend-box correct"></span>
+            <span>Solutions / Correct Code</span>
+          </span>
+          <span class="code-legend-item">
+            <span class="code-legend-box highlight"></span>
+            <span>Important Changes</span>
+          </span>
+        </div>
 
         <h3>The Starting Code</h3>
         <pre><code>public class OrderProcessor
@@ -64,17 +115,17 @@
 
     public bool ProcessPayment(string cardNumber)
     {
-        PaymentGateway gateway = new PaymentGateway(); // ❌ Tight coupling!
+        <span class="error">PaymentGateway gateway = new PaymentGateway();</span> <span class="comment-error">// ❌ Tight coupling!</span>
         bool paymentSuccess = gateway.Charge(cardNumber, TotalAmount);
         
         if (paymentSuccess)
         {
             IsPaid = true;
             
-            EmailNotifier notifier = new EmailNotifier(); // ❌
+            <span class="error">EmailNotifier notifier = new EmailNotifier();</span> <span class="comment-error">// ❌</span>
             notifier.SendEmail(CustomerName, "Payment Successful", ...);
             
-            InventoryManager inventory = new InventoryManager(); // ❌
+            <span class="error">InventoryManager inventory = new InventoryManager();</span> <span class="comment-error">// ❌</span>
             inventory.ReserveItems(OrderId);
             
             return true;
@@ -89,40 +140,46 @@
             throw new Exception("Cannot ship unpaid order!");
         }
         
-        AuditLogger logger = new AuditLogger(); // ❌ Only used here
+        <span class="error">AuditLogger logger = new AuditLogger();</span> <span class="comment-error">// ❌ Only used here</span>
         logger.Log($"Shipping order {OrderId}...");
         
-        ShippingService shipper = new ShippingService(); // ❌
+        <span class="error">ShippingService shipper = new ShippingService();</span> <span class="comment-error">// ❌</span>
         shipper.CreateShipment(OrderId, shippingAddress, carrier);
         
-        EmailNotifier notifier = new EmailNotifier(); // ❌ Created again!
+        <span class="error">EmailNotifier notifier = new EmailNotifier();</span> <span class="comment-error">// ❌ Created again!</span>
         notifier.SendEmail(CustomerName, "Order Shipped", ...);
     }
 
     public void ApplyDiscount(decimal discountPercent)
     {
-        DiscountCalculator calculator = new DiscountCalculator(); // ❌ Only used here
+        <span class="error">DiscountCalculator calculator = new DiscountCalculator();</span> <span class="comment-error">// ❌ Only used here</span>
         decimal newTotal = calculator.Calculate(TotalAmount, discountPercent);
         TotalAmount = newTotal;
         
-        EmailNotifier notifier = new EmailNotifier(); // ❌ Created third time!
+        <span class="error">EmailNotifier notifier = new EmailNotifier();</span> <span class="comment-error">// ❌ Created third time!</span>
         notifier.SendEmail(CustomerName, "Discount Applied", ...);
     }
 }</code></pre>
 
-        <h2>Phase 1: Outstanding Problem Analysis (+12 points)</h2>
-        <p><strong>Score: 50 → 62 points</strong></p>
+        <h2 id="learning-journey">The Learning Journey</h2>
+
+        <h2 id="phase1">Phase 1: Outstanding Problem Analysis</h2>
+        <p>
+          <strong>Score: 50 → 62 points</strong>
+          <span class="score-badge bonus">+12 points</span>
+        </p>
 
         <p>
-          The learner provided an exceptional analysis, identifying NINE
-          distinct problems:
+          The learner provided an exceptional analysis, identifying
+          <strong>NINE distinct problems</strong>:
         </p>
 
         <h3>Problems Identified ✅</h3>
 
         <details>
           <summary>
-            1. ShipOrder has too many responsibilities (+2 points)
+            1. ShipOrder has too many responsibilities
+            <span class="score-badge bonus">+2 points</span>
           </summary>
           <p>
             <strong>Analysis:</strong> "ShipOrder → logs → ships → notifies: too
@@ -135,7 +192,9 @@
         </details>
 
         <details>
-          <summary>2. Unable to test (+2 points)</summary>
+          <summary>
+            2. Unable to test <span class="score-badge bonus">+2 points</span>
+          </summary>
           <p><strong>Analysis:</strong> "Unable to test"</p>
           <p>
             Perfect! Can't mock PaymentGateway, EmailNotifier, or any other
@@ -146,7 +205,8 @@
 
         <details>
           <summary>
-            3. EmailNotifier recreated multiple times (+2 points)
+            3. EmailNotifier recreated multiple times
+            <span class="score-badge bonus">+2 points</span>
           </summary>
           <p>
             <strong>Analysis:</strong> "EmailNotifier declared multiple time"
@@ -161,7 +221,8 @@
 
         <details>
           <summary>
-            4. Liskov Substitution Principle (+1 point, partial)
+            4. Liskov Substitution Principle
+            <span class="score-badge bonus">+1 point</span> (partial)
           </summary>
           <p>
             <strong>Analysis:</strong> "Liskov Substitution Principle ← I know
@@ -177,7 +238,8 @@
 
         <details>
           <summary>
-            5. DiscountCalculator perfect for Method Injection (+2 points)
+            5. DiscountCalculator perfect for Method Injection
+            <span class="score-badge bonus">+2 points</span>
           </summary>
           <p>
             <strong>Analysis:</strong> "Calculator is only used once, best make
@@ -190,7 +252,10 @@
         </details>
 
         <details>
-          <summary>6. OrderProcessor violates SRP (+2 points)</summary>
+          <summary>
+            6. OrderProcessor violates SRP
+            <span class="score-badge bonus">+2 points</span>
+          </summary>
           <p>
             <strong>Analysis:</strong> "OrderProcessor class has too many
             responsibilities: Instantiates, Processes payment, Inventory
@@ -204,7 +269,10 @@
         </details>
 
         <details>
-          <summary>7. Open/Closed Principle violation (+2 points)</summary>
+          <summary>
+            7. Open/Closed Principle violation
+            <span class="score-badge bonus">+2 points</span>
+          </summary>
           <p>
             <strong>Analysis:</strong> "Open/Close: to change the payment
             method, we have to change the whole class → not modify, but extend"
@@ -219,7 +287,10 @@
         </details>
 
         <details>
-          <summary>8. Lack of validation (+2 points)</summary>
+          <summary>
+            8. Lack of validation
+            <span class="score-badge bonus">+2 points</span>
+          </summary>
           <p><strong>Analysis:</strong> "Lack of Validation"</p>
           <p>Good catch! No validation for:</p>
           <ul>
@@ -232,7 +303,8 @@
 
         <details>
           <summary>
-            9. Security concern: Credit card exposure (+2 points)
+            9. Security concern: Credit card exposure
+            <span class="score-badge bonus">+2 points</span>
           </summary>
           <p>
             <strong>Analysis:</strong> "credit card number is exposed ← this one
@@ -262,12 +334,16 @@
           </ul>
         </div>
 
-        <h2>Phase 2: DI Strategy Decisions (+9 points, -3 points)</h2>
-        <p><strong>Score: 62 → 68 points</strong></p>
+        <h2 id="phase2">Phase 2: DI Strategy Decisions</h2>
+        <p>
+          <strong>Score: 62 → 68 points</strong>
+          <span class="score-badge bonus">+9 points</span>
+          <span class="score-badge penalty">-3 points</span>
+        </p>
 
         <p>
-          With SIX dependencies to classify, this was the most complex
-          decision-making round:
+          With <strong>SIX dependencies</strong> to classify, this was the most
+          complex decision-making round:
         </p>
 
         <table>
@@ -377,15 +453,22 @@
         <p><strong>Reasoning:</strong> Only used in ApplyDiscount method.</p>
         <p><strong>Perfect!</strong> Another textbook Method Injection case.</p>
 
-        <h2>Phase 3: Implementation Attempt 1 (+15 points, -13 points)</h2>
-        <p><strong>Score: 68 → 53 points</strong></p>
+        <h2 id="phase3">Phase 3: Implementation Attempt 1</h2>
+        <p>
+          <strong>Score: 68 → 53 points</strong>
+          <span class="score-badge bonus">+15 points</span>
+          <span class="score-badge penalty">-13 points</span>
+        </p>
 
         <h3>Critical Issues Found</h3>
 
         <details>
-          <summary>Issue 1: Empty Interfaces (-5 points)</summary>
-          <pre><code>public interface IPaymentGateway { } // ❌ No methods!
-public interface IEmailNotifier { } // ❌ Empty!</code></pre>
+          <summary>
+            Issue 1: Empty Interfaces
+            <span class="score-badge penalty">-5 points</span>
+          </summary>
+          <pre><code><span class="error">public interface IPaymentGateway { }</span> <span class="comment-error">// ❌ No methods!</span>
+<span class="error">public interface IEmailNotifier { }</span> <span class="comment-error">// ❌ Empty!</span></code></pre>
 
           <p>
             <strong>Problem:</strong> Interfaces without methods are useless
@@ -393,22 +476,23 @@ public interface IEmailNotifier { } // ❌ Empty!</code></pre>
           </p>
 
           <p><strong>Fix:</strong> Add method signatures:</p>
-          <pre><code>public interface IPaymentGateway 
+          <pre><code><span class="correct">public interface IPaymentGateway</span> 
 {
-    bool Charge(string cardNumber, decimal amount);
+    <span class="correct">bool Charge(string cardNumber, decimal amount);</span>
 }
 
-public interface IEmailNotifier 
+<span class="correct">public interface IEmailNotifier</span> 
 {
-    void SendEmail(string to, string subject, string body);
+    <span class="correct">void SendEmail(string to, string subject, string body);</span>
 }</code></pre>
         </details>
 
         <details>
           <summary>
-            Issue 2: Public Constructor-Injected Fields (-2 points)
+            Issue 2: Public Constructor-Injected Fields
+            <span class="score-badge penalty">-2 points</span>
           </summary>
-          <pre><code>public readonly IPaymentGateway _paymentGateway; // ❌ Should be private!</code></pre>
+          <pre><code><span class="error">public readonly IPaymentGateway _paymentGateway;</span> <span class="comment-error">// ❌ Should be private!</span></code></pre>
 
           <p>
             <strong>Problem:</strong> Constructor-injected dependencies should
@@ -416,15 +500,18 @@ public interface IEmailNotifier
           </p>
 
           <p><strong>Fix:</strong></p>
-          <pre><code>private readonly IPaymentGateway _paymentGateway; // ✅</code></pre>
+          <pre><code><span class="correct">private readonly IPaymentGateway _paymentGateway;</span> <span class="comment-correct">// ✅</span></code></pre>
         </details>
 
         <details>
-          <summary>Issue 3: Still Using "new" (-3 points)</summary>
+          <summary>
+            Issue 3: Still Using "new"
+            <span class="score-badge penalty">-3 points</span>
+          </summary>
           <pre><code>public bool ProcessPayment(string cardNumber)
 {
     // ...
-    EmailNotifier notifier = new EmailNotifier(); // ❌ Still tightly coupled!
+    <span class="error">EmailNotifier notifier = new EmailNotifier();</span> <span class="comment-error">// ❌ Still tightly coupled!</span>
     notifier.SendEmail(...);
 }</code></pre>
 
@@ -434,20 +521,21 @@ public interface IEmailNotifier
           </p>
 
           <p><strong>Fix:</strong> Use the Property Injection:</p>
-          <pre><code>public IEmailNotifier EmailNotifier { get; set; } // Property
+          <pre><code><span class="correct">public IEmailNotifier EmailNotifier { get; set; }</span> <span class="comment-correct">// Property</span>
 
 public bool ProcessPayment(string cardNumber)
 {
     // ...
-    EmailNotifier?.SendEmail(...); // ✅ Use the property
+    <span class="correct">EmailNotifier?.SendEmail(...);</span> <span class="comment-correct">// ✅ Use the property</span>
 }</code></pre>
         </details>
 
         <details>
           <summary>
-            Issue 4: Property Naming with Underscore (-2 points)
+            Issue 4: Property Naming with Underscore
+            <span class="score-badge penalty">-2 points</span>
           </summary>
-          <pre><code>public IShippingService _shipper { get; set; } // ❌ Wrong convention</code></pre>
+          <pre><code><span class="error">public IShippingService _shipper { get; set; }</span> <span class="comment-error">// ❌ Wrong convention</span></code></pre>
 
           <p>
             <strong>Problem:</strong> Properties use PascalCase without
@@ -455,12 +543,13 @@ public bool ProcessPayment(string cardNumber)
           </p>
 
           <p><strong>Fix:</strong></p>
-          <pre><code>public IShippingService ShippingService { get; set; } // ✅</code></pre>
+          <pre><code><span class="correct">public IShippingService ShippingService { get; set; }</span> <span class="comment-correct">// ✅</span></code></pre>
         </details>
 
         <details>
           <summary>
-            Issue 5: Inconsistent EmailNotifier Approach (-1 point)
+            Issue 5: Inconsistent EmailNotifier Approach
+            <span class="score-badge penalty">-1 point</span>
           </summary>
           <p>
             The learner injected EmailNotifier as a method parameter in
@@ -471,16 +560,16 @@ public bool ProcessPayment(string cardNumber)
           <p><strong>Two valid approaches:</strong></p>
 
           <p><strong>Approach A (Property - Recommended):</strong></p>
-          <pre><code>public IEmailNotifier EmailNotifier { get; set; }
+          <pre><code><span class="correct">public IEmailNotifier EmailNotifier { get; set; }</span>
 
 public void ShipOrder(...)
 {
-    EmailNotifier?.SendEmail(...);
+    <span class="correct">EmailNotifier?.SendEmail(...);</span>
 }
 
 public void ApplyDiscount(...)
 {
-    EmailNotifier?.SendEmail(...);
+    <span class="correct">EmailNotifier?.SendEmail(...);</span>
 }</code></pre>
 
           <p><strong>Approach B (Method):</strong></p>
@@ -495,11 +584,12 @@ public void ApplyDiscount(..., IEmailNotifier notifier)
 }</code></pre>
         </details>
 
-        <h2>
-          Phase 4: Implementation Attempt 2 (Almost Perfect!) (+17 points, -3
-          points)
-        </h2>
-        <p><strong>Score: 53 → 67 points</strong></p>
+        <h2 id="phase4">Phase 4: Implementation Attempt 2 (Almost Perfect!)</h2>
+        <p>
+          <strong>Score: 53 → 67 points</strong>
+          <span class="score-badge bonus">+17 points</span>
+          <span class="score-badge penalty">-3 points</span>
+        </p>
 
         <h3>What Was Fixed Perfectly ✅</h3>
         <ul>
@@ -529,8 +619,11 @@ public void ApplyDiscount(..., IEmailNotifier notifier)
         <h3>Minor Issues Remaining</h3>
 
         <details>
-          <summary>Missing Null Check on ShippingService (-2 points)</summary>
-          <pre><code>ShippingService.CreateShipment(OrderId, shippingAddress, carrier); // ❌</code></pre>
+          <summary>
+            Missing Null Check on ShippingService
+            <span class="score-badge penalty">-2 points</span>
+          </summary>
+          <pre><code><span class="error">ShippingService.CreateShipment(OrderId, shippingAddress, carrier);</span> <span class="comment-error">// ❌</span></code></pre>
 
           <p>
             Since ShippingService is Property Injection (optional), it could be
@@ -538,12 +631,15 @@ public void ApplyDiscount(..., IEmailNotifier notifier)
           </p>
 
           <p><strong>Fix:</strong></p>
-          <pre><code>ShippingService?.CreateShipment(OrderId, shippingAddress, carrier); // ✅</code></pre>
+          <pre><code><span class="correct">ShippingService?.CreateShipment(OrderId, shippingAddress, carrier);</span> <span class="comment-correct">// ✅</span></code></pre>
         </details>
 
         <details>
-          <summary>Calculator Null Check Type Mismatch (-1 point)</summary>
-          <pre><code>decimal newTotal = calculator?.Calculate(TotalAmount, discountPercent); // ❌</code></pre>
+          <summary>
+            Calculator Null Check Type Mismatch
+            <span class="score-badge penalty">-1 point</span>
+          </summary>
+          <pre><code><span class="error">decimal newTotal = calculator?.Calculate(TotalAmount, discountPercent);</span> <span class="comment-error">// ❌</span></code></pre>
 
           <p>
             <strong>Problem:</strong>
@@ -553,11 +649,14 @@ public void ApplyDiscount(..., IEmailNotifier notifier)
           </p>
 
           <p><strong>Fix:</strong> Use null-coalescing operator:</p>
-          <pre><code>decimal newTotal = calculator?.Calculate(TotalAmount, discountPercent) ?? TotalAmount; // ✅</code></pre>
+          <pre><code><span class="correct">decimal newTotal = calculator?.Calculate(TotalAmount, discountPercent) ?? TotalAmount;</span> <span class="comment-correct">// ✅</span></code></pre>
         </details>
 
-        <h2>Phase 5: Perfect Implementation (+6 points)</h2>
-        <p><strong>Score: 67 → 73 points</strong></p>
+        <h2 id="phase5">Phase 5: Perfect Implementation</h2>
+        <p>
+          <strong>Score: 67 → 73 points</strong>
+          <span class="score-badge bonus">+6 points</span>
+        </p>
 
         <h3>Final Fixes Applied</h3>
         <ul>
@@ -575,36 +674,41 @@ public void ApplyDiscount(..., IEmailNotifier notifier)
         <h3>The Perfect Main Method</h3>
         <pre><code>public static void Main()
 {
-    // Create implementations
+    <span class="comment-correct">// Create implementations</span>
     var gateway = new PaymentGateway();
     var inventory = new InventoryManager();
     
-    // Constructor Injection - critical dependencies
-    var order = new OrderProcessor(
+    <span class="comment-correct">// Constructor Injection - critical dependencies</span>
+    <span class="correct">var order = new OrderProcessor(
         orderId: 1001,
         customerName: "Alice",
         totalAmount: 250.00m,
         paymentGateway: gateway,
         inventoryManager: inventory
-    )
+    )</span>
     {
-        // Property Injection - optional features
-        EmailNotifier = new EmailNotifier(),
-        ShippingService = new ShippingService()
+        <span class="comment-correct">// Property Injection - optional features</span>
+        <span class="correct">EmailNotifier = new EmailNotifier(),
+        ShippingService = new ShippingService()</span>
     };
     
-    // Process payment
+    <span class="comment-correct">// Process payment</span>
     order.ProcessPayment("1234-5678-9012-3456");
     
-    // Method Injection - pass logger to specific method
-    order.ShipOrder("123 Main St", "FedEx", new AuditLogger());
+    <span class="comment-correct">// Method Injection - pass logger to specific method</span>
+    <span class="correct">order.ShipOrder("123 Main St", "FedEx", new AuditLogger());</span>
     
-    // Method Injection - pass calculator to specific method
-    order.ApplyDiscount(10m, new DiscountCalculator());
+    <span class="comment-correct">// Method Injection - pass calculator to specific method</span>
+    <span class="correct">order.ApplyDiscount(10m, new DiscountCalculator());</span>
 }</code></pre>
 
-        <h2>Final Complete Code</h2>
-        <pre><code>// ==================== INTERFACES ====================
+        <h2 id="final-code">The Final Solution: Complete Code</h2>
+        <p>
+          This is the <strong>AFTER</strong> state - the refactored code with
+          all three DI types working together:
+        </p>
+
+        <pre><code><span class="comment-correct">// ==================== INTERFACES ====================</span>
 
 public interface IPaymentGateway
 {
@@ -636,117 +740,117 @@ public interface IDiscountCalculator
     decimal Calculate(decimal amount, decimal percent);
 }
 
-// ==================== ORDER PROCESSOR ====================
+<span class="comment-correct">// ==================== ORDER PROCESSOR ====================</span>
 
 public class OrderProcessor
 {
-    // Constructor Injection - Critical dependencies
-    private readonly IPaymentGateway _paymentGateway;
-    private readonly IInventoryManager _inventoryManager;
+    <span class="comment-correct">// Constructor Injection - Critical dependencies</span>
+    <span class="correct">private readonly IPaymentGateway _paymentGateway;
+    private readonly IInventoryManager _inventoryManager;</span>
     
-    // Properties
+    <span class="comment-correct">// Properties</span>
     public int OrderId { get; set; }
     public string CustomerName { get; set; }
     public decimal TotalAmount { get; set; }
     public bool IsPaid { get; set; }
 
-    // Property Injection - Optional dependencies
-    public IShippingService ShippingService { get; set; }
-    public IEmailNotifier EmailNotifier { get; set; }
+    <span class="comment-correct">// Property Injection - Optional dependencies</span>
+    <span class="correct">public IShippingService ShippingService { get; set; }
+    public IEmailNotifier EmailNotifier { get; set; }</span>
 
-    public OrderProcessor(
+    <span class="correct">public OrderProcessor(
         int orderId,
         string customerName,
         decimal totalAmount,
         IPaymentGateway paymentGateway,
-        IInventoryManager inventoryManager)
+        IInventoryManager inventoryManager)</span>
     {
         OrderId = orderId;
         CustomerName = customerName;
         TotalAmount = totalAmount;
         IsPaid = false;
-        _paymentGateway = paymentGateway;
-        _inventoryManager = inventoryManager;
+        <span class="correct">_paymentGateway = paymentGateway;
+        _inventoryManager = inventoryManager;</span>
     }
 
     public bool ProcessPayment(string cardNumber)
     {
-        bool paymentSuccess = _paymentGateway.Charge(cardNumber, TotalAmount);
+        bool paymentSuccess = <span class="correct">_paymentGateway.Charge(cardNumber, TotalAmount);</span>
 
         if (paymentSuccess)
         {
             IsPaid = true;
 
-            EmailNotifier?.SendEmail(CustomerName, "Payment Successful",
-                $"Your payment of ${TotalAmount} was processed.");
+            <span class="correct">EmailNotifier?.SendEmail(CustomerName, "Payment Successful",
+                $"Your payment of ${TotalAmount} was processed.");</span>
 
-            _inventoryManager.ReserveItems(OrderId);
+            <span class="correct">_inventoryManager.ReserveItems(OrderId);</span>
 
             return true;
         }
         return false;
     }
 
-    // Method Injection - Logger only needed here
-    public void ShipOrder(string shippingAddress, string carrier, IAuditLogger logger)
+    <span class="comment-correct">// Method Injection - Logger only needed here</span>
+    <span class="correct">public void ShipOrder(string shippingAddress, string carrier, IAuditLogger logger)</span>
     {
         if (!IsPaid)
         {
             throw new Exception("Cannot ship unpaid order!");
         }
 
-        logger?.Log($"Shipping order {OrderId} to {shippingAddress} via {carrier}");
+        <span class="correct">logger?.Log($"Shipping order {OrderId} to {shippingAddress} via {carrier}");</span>
 
-        ShippingService?.CreateShipment(OrderId, shippingAddress, carrier);
+        <span class="correct">ShippingService?.CreateShipment(OrderId, shippingAddress, carrier);</span>
 
-        EmailNotifier?.SendEmail(CustomerName, "Order Shipped",
-            $"Your order has been shipped to {shippingAddress}");
+        <span class="correct">EmailNotifier?.SendEmail(CustomerName, "Order Shipped",
+            $"Your order has been shipped to {shippingAddress}");</span>
     }
 
-    // Method Injection - Calculator only needed here
-    public void ApplyDiscount(decimal discountPercent, IDiscountCalculator calculator)
+    <span class="comment-correct">// Method Injection - Calculator only needed here</span>
+    <span class="correct">public void ApplyDiscount(decimal discountPercent, IDiscountCalculator calculator)</span>
     {
-        decimal newTotal = calculator?.Calculate(TotalAmount, discountPercent) ?? TotalAmount;
+        <span class="correct">decimal newTotal = calculator?.Calculate(TotalAmount, discountPercent) ?? TotalAmount;</span>
         TotalAmount = newTotal;
 
-        EmailNotifier?.SendEmail(CustomerName, "Discount Applied",
-            $"Your new total is ${TotalAmount}");
+        <span class="correct">EmailNotifier?.SendEmail(CustomerName, "Discount Applied",
+            $"Your new total is ${TotalAmount}");</span>
     }
     
-    // ==================== MAIN METHOD ====================
+    <span class="comment-correct">// ==================== MAIN METHOD ====================</span>
     
     public static void Main()
     {
-        // Create implementations
+        <span class="comment-correct">// Create implementations</span>
         var gateway = new PaymentGateway();
         var inventory = new InventoryManager();
         
-        // Constructor Injection
-        var order = new OrderProcessor(
+        <span class="comment-correct">// Constructor Injection</span>
+        <span class="correct">var order = new OrderProcessor(
             orderId: 1001,
             customerName: "Alice",
             totalAmount: 250.00m,
             paymentGateway: gateway,
             inventoryManager: inventory
-        )
+        )</span>
         {
-            // Property Injection
-            EmailNotifier = new EmailNotifier(),
-            ShippingService = new ShippingService()
+            <span class="comment-correct">// Property Injection</span>
+            <span class="correct">EmailNotifier = new EmailNotifier(),
+            ShippingService = new ShippingService()</span>
         };
         
-        // Process payment
+        <span class="comment-correct">// Process payment</span>
         order.ProcessPayment("1234-5678-9012-3456");
         
-        // Method Injection - pass logger to ShipOrder
-        order.ShipOrder("123 Main St", "FedEx", new AuditLogger());
+        <span class="comment-correct">// Method Injection - pass logger to ShipOrder</span>
+        <span class="correct">order.ShipOrder("123 Main St", "FedEx", new AuditLogger());</span>
         
-        // Method Injection - pass calculator to ApplyDiscount
-        order.ApplyDiscount(10m, new DiscountCalculator());
+        <span class="comment-correct">// Method Injection - pass calculator to ApplyDiscount</span>
+        <span class="correct">order.ApplyDiscount(10m, new DiscountCalculator());</span>
     }
 }
 
-// ==================== IMPLEMENTATIONS ====================
+<span class="comment-correct">// ==================== IMPLEMENTATIONS ====================</span>
 
 public class PaymentGateway : IPaymentGateway
 {
@@ -797,7 +901,7 @@ public class DiscountCalculator : IDiscountCalculator
     }
 }</code></pre>
 
-        <h2>Score Journey Visualization</h2>
+        <h2 id="score-journey">Score Journey Visualization</h2>
         <table>
           <thead>
             <tr>
@@ -847,7 +951,7 @@ public class DiscountCalculator : IDiscountCalculator
           </tbody>
         </table>
 
-        <h2>Three-Round Comparison</h2>
+        <h2 id="comparison">Three-Round Comparison</h2>
         <table>
           <thead>
             <tr>
@@ -911,7 +1015,7 @@ public class DiscountCalculator : IDiscountCalculator
           </tbody>
         </table>
 
-        <h2>Key Lessons from Round 3</h2>
+        <h2 id="key-lessons">Key Lessons from Round 3</h2>
 
         <h3>1. Dependency Classification Framework</h3>
         <p>With 6 dependencies, a clear decision framework is essential:</p>
@@ -920,20 +1024,20 @@ public class DiscountCalculator : IDiscountCalculator
 
 1. Is it CRITICAL to core operation?
    ├─ YES: Can the class function without it?
-   │   ├─ NO → Constructor Injection
+   │   ├─ NO → <span class="correct">Constructor Injection</span>
    │   └─ YES → Keep asking
    └─ NO → Keep asking
 
 2. Is it used in MOST/ALL methods?
-   ├─ YES → Constructor Injection
+   ├─ YES → <span class="correct">Constructor Injection</span>
    └─ NO → Keep asking
 
 3. Is it used in MULTIPLE methods?
-   ├─ YES → Property Injection (optional feature)
+   ├─ YES → <span class="correct">Property Injection</span> (optional feature)
    └─ NO → Keep asking
 
 4. Is it used in ONE specific method?
-   └─ YES → Method Injection</code></pre>
+   └─ YES → <span class="correct">Method Injection</span></code></pre>
 
         <h3>2. Real-World Example Decisions</h3>
         <table>
@@ -990,13 +1094,13 @@ public class DiscountCalculator : IDiscountCalculator
           With Property and Method injection, always use null-safe operators:
         </p>
 
-        <pre><code>// Property Injection - could be null
-EmailNotifier?.SendEmail(...);  // If null, skip
-ShippingService?.CreateShipment(...);  // If null, skip
+        <pre><code><span class="comment-correct">// Property Injection - could be null</span>
+<span class="correct">EmailNotifier?.SendEmail(...);</span>  <span class="comment-correct">// If null, skip</span>
+<span class="correct">ShippingService?.CreateShipment(...);</span>  <span class="comment-correct">// If null, skip</span>
 
-// Method Injection - caller should provide, but be safe
-logger?.Log(...);  // If null, skip
-decimal result = calculator?.Calculate(...) ?? defaultValue;  // If null, use default</code></pre>
+<span class="comment-correct">// Method Injection - caller should provide, but be safe</span>
+<span class="correct">logger?.Log(...);</span>  <span class="comment-correct">// If null, skip</span>
+<span class="correct">decimal result = calculator?.Calculate(...) ?? defaultValue;</span>  <span class="comment-correct">// If null, use default</span></code></pre>
 
         <h3>4. SOLID Principles Internalized</h3>
         <p>Round 3 demonstrated deep understanding of SOLID:</p>
@@ -1034,7 +1138,7 @@ decimal result = calculator?.Calculate(...) ?? defaultValue;  // If null, use de
           <li>Clean, production-ready final code</li>
         </ul>
 
-        <h2>Growth Across Three Rounds</h2>
+        <h2 id="growth">Growth Across Three Rounds</h2>
 
         <h3>Round 1: Foundation</h3>
         <blockquote>
@@ -1103,7 +1207,7 @@ decimal result = calculator?.Calculate(...) ?? defaultValue;  // If null, use de
           </li>
         </ol>
 
-        <h2>Conclusion</h2>
+        <h2 id="conclusion">Conclusion</h2>
 
         <p>
           Round 3 represents the culmination of the learning journey. The pain
@@ -1137,6 +1241,16 @@ decimal result = calculator?.Calculate(...) ?? defaultValue;  // If null, use de
 
       <!-- Return links -->
       <span><a href="../../index.html">Main Page</a></span>
+      <span> | </span>
+      <span
+        ><a href="./dependency-injection.html">Round 1: Bank System</a></span
+      >
+      <span> | </span>
+      <span
+        ><a href="./dependency-injection-round2.html"
+          >Round 2: Task Manager</a
+        ></span
+      >
     </main>
     <footer>
       The
