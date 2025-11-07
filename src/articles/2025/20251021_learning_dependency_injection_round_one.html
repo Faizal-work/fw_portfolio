@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Learning Dependency Injection: A Gamified Journey</title>
+    <title>Learning Dependency Injection Round 1: A Gamified Journey</title>
     <link rel="stylesheet" href="../../asset/drew.min.css" />
   </head>
   <body>
     <h1>
-      Learning Dependency Injection: A Gamified Journey
+      Learning Dependency Injection : A Gamified Journey
       <small> <span class="date">21-October-2025</span> by Faizal.Work </small>
     </h1>
     <main>
@@ -34,8 +34,55 @@
           </li>
         </ul>
 
-        <h2>Phase 0: The Problem - Tightly Coupled Code</h2>
-        <p>We started with code that "works" but has serious design issues:</p>
+        <!-- Table of Contents -->
+        <div class="toc" id="toc">
+          <h2>📑 Table of Contents</h2>
+          <ol>
+            <li>
+              <a href="#initial-code"
+                >The Initial Problem (Tightly Coupled Code)</a
+              >
+            </li>
+            <li>
+              <a href="#learning-journey">The Learning Journey</a>
+              <ol>
+                <li><a href="#phase1">Phase 1: Constructor Injection</a></li>
+                <li><a href="#phase2">Phase 2: Property Injection</a></li>
+                <li><a href="#phase3">Phase 3: Method Injection</a></li>
+              </ol>
+            </li>
+            <li><a href="#final-results">Final Results & Score Summary</a></li>
+            <li><a href="#key-lessons">Key Lessons Learned</a></li>
+            <li><a href="#comparison">Comparison of DI Types</a></li>
+            <li>
+              <a href="#final-code">The Final Solution (Complete Code)</a>
+            </li>
+            <li><a href="#conclusion">Conclusion</a></li>
+          </ol>
+        </div>
+
+        <h2 id="initial-code">The Initial Problem: Tightly Coupled Code</h2>
+        <p>
+          We started with code that "works" but has serious design issues. This
+          is the <strong>BEFORE</strong> state - the problematic code we need to
+          fix:
+        </p>
+
+        <div class="code-legend">
+          <strong>Code Highlighting Legend:</strong><br />
+          <span class="code-legend-item">
+            <span class="code-legend-box error"></span>
+            <span>Problems / Errors</span>
+          </span>
+          <span class="code-legend-item">
+            <span class="code-legend-box correct"></span>
+            <span>Solutions / Correct Code</span>
+          </span>
+          <span class="code-legend-item">
+            <span class="code-legend-box highlight"></span>
+            <span>Important Changes</span>
+          </span>
+        </div>
 
         <pre><code>public class User
 {
@@ -52,17 +99,17 @@
 
     public void SendWelcomeEmail()
     {
-        EmailService emailService = new EmailService(); // ❌ Tight coupling!
+        <span class="error">EmailService emailService = new EmailService();</span> <span class="comment-error">// ❌ Tight coupling!</span>
         emailService.Send(Email, "Welcome!", $"Hello {Name}...");
     }
 
     public bool Withdraw(decimal amount)
     {
-        BankAccount account = new BankAccount(_balance); // ❌ Creates fresh each time!
+        <span class="error">BankAccount account = new BankAccount(_balance);</span> <span class="comment-error">// ❌ Creates fresh each time!</span>
         if (account.HasSufficientFunds(amount))
         {
             _balance = account.Deduct(amount);
-            EmailService emailService = new EmailService(); // ❌ Again!
+            <span class="error">EmailService emailService = new EmailService();</span> <span class="comment-error">// ❌ Again!</span>
             emailService.Send(Email, "Withdrawal Notification", ...);
             return true;
         }
@@ -84,17 +131,28 @@
             <strong>Hard to Change:</strong> Want SMS instead? Must modify User
             class
           </li>
+          <li>
+            <strong>Violates Dependency Inversion Principle:</strong> High-level
+            module depends on low-level implementations
+          </li>
         </ul>
 
-        <h2>Phase 1: Constructor Injection</h2>
+        <h2 id="learning-journey">The Learning Journey</h2>
+        <p>
+          Now let's walk through the journey of fixing these problems, learning
+          from mistakes along the way.
+        </p>
+
+        <h2 id="phase1">Phase 1: Constructor Injection</h2>
         <p><strong>Score at start: 50 points</strong></p>
 
         <h3>Common Mistakes Made</h3>
         <details>
           <summary>
-            Mistake #1: Inheritance Instead of Composition (-4 points)
+            Mistake #1: Inheritance Instead of Composition
+            <span class="score-badge penalty">-4 points</span>
           </summary>
-          <pre><code>public class User : IEmailService // ❌ WRONG!
+          <pre><code><span class="error">public class User : IEmailService</span> <span class="comment-error">// ❌ WRONG!</span>
 {
     // User shouldn't BE an email service, it should USE one
 }</code></pre>
@@ -105,13 +163,16 @@
         </details>
 
         <details>
-          <summary>Mistake #2: Implementation in Interface (-4 points)</summary>
+          <summary>
+            Mistake #2: Implementation in Interface
+            <span class="score-badge penalty">-4 points</span>
+          </summary>
           <pre><code>public interface IEmailService
 {
-    void Send(string to, string subject, string body)
+    <span class="error">void Send(string to, string subject, string body)
     {
         Console.WriteLine(...); // ❌ Interfaces don't have bodies in C#!
-    }
+    }</span>
 }</code></pre>
           <p>
             <strong>Lesson:</strong> Interfaces are contracts - just signatures,
@@ -120,7 +181,10 @@
         </details>
 
         <details>
-          <summary>Mistake #3: Still Creating Dependencies (-4 points)</summary>
+          <summary>
+            Mistake #3: Still Creating Dependencies
+            <span class="score-badge penalty">-4 points</span>
+          </summary>
           <pre><code>public User(IEmailService emailService)
 {
     _emailService = emailService;
@@ -128,7 +192,7 @@
 
 public void Withdraw(decimal amount)
 {
-    EmailService emailService = new EmailService(); // ❌ Still doing new!
+    <span class="error">EmailService emailService = new EmailService();</span> <span class="comment-error">// ❌ Still doing new!</span>
 }</code></pre>
           <p>
             <strong>Lesson:</strong> Use the injected dependency, don't create
@@ -137,27 +201,35 @@ public void Withdraw(decimal amount)
         </details>
 
         <details>
-          <summary>Mistake #4: Naming Inconsistency (-3 points)</summary>
-          <pre><code>private readonly IEmailService emailService; // No underscore
+          <summary>
+            Mistake #4: Naming Inconsistency
+            <span class="score-badge penalty">-3 points</span>
+          </summary>
+          <pre><code><span class="error">private readonly IEmailService emailService;</span> <span class="comment-error">// No underscore</span>
 // but later:
-_emailService = emailService; // With underscore</code></pre>
+<span class="error">_emailService = emailService;</span> <span class="comment-error">// With underscore</span></code></pre>
           <p><strong>Lesson:</strong> Be consistent with naming conventions</p>
         </details>
 
         <details>
-          <summary>Mistake #5: Using Non-Existent Field (-3 points)</summary>
-          <pre><code>// private decimal _balance; // Commented out
-_balance = initialBalance; // ❌ But still using it!</code></pre>
+          <summary>
+            Mistake #5: Using Non-Existent Field
+            <span class="score-badge penalty">-3 points</span>
+          </summary>
+          <pre><code><span class="error">// private decimal _balance; // Commented out
+_balance = initialBalance;</span> <span class="comment-error">// ❌ But still using it!</span></code></pre>
           <p>
             <strong>Lesson:</strong> If you remove a field, update all
             references
           </p>
         </details>
 
-        <h3>The Correct Solution (+4 points)</h3>
+        <h3>
+          The Correct Solution <span class="score-badge bonus">+4 points</span>
+        </h3>
         <pre><code>public interface IEmailService
 {
-    void Send(string to, string subject, string body); // Just signature
+    void Send(string to, string subject, string body); <span class="comment-correct">// ✅ Just signature</span>
 }
 
 public interface IBankAccount
@@ -169,25 +241,25 @@ public interface IBankAccount
 
 public class User
 {
-    private readonly IEmailService _emailService; // ✅ Store injected dependency
-    private readonly IBankAccount _bankAccount;
+    <span class="correct">private readonly IEmailService _emailService;</span> <span class="comment-correct">// ✅ Store injected dependency</span>
+    <span class="correct">private readonly IBankAccount _bankAccount;</span>
     
     public string Name { get; set; }
     public string Email { get; set; }
 
-    public User(string name, string email, 
-                IEmailService emailService, // ✅ Inject through constructor
-                IBankAccount bankAccount)
+    <span class="correct">public User(string name, string email, 
+                IEmailService emailService,</span> <span class="comment-correct">// ✅ Inject through constructor</span>
+                <span class="correct">IBankAccount bankAccount)</span>
     {
         Name = name;
         Email = email;
-        _emailService = emailService; // ✅ Store it
-        _bankAccount = bankAccount;
+        <span class="correct">_emailService = emailService;</span> <span class="comment-correct">// ✅ Store it</span>
+        <span class="correct">_bankAccount = bankAccount;</span>
     }
 
     public void SendWelcomeEmail()
     {
-        _emailService.Send(Email, "Welcome!", $"Hello {Name}..."); // ✅ Use injected
+        <span class="correct">_emailService.Send(Email, "Welcome!", $"Hello {Name}...");</span> <span class="comment-correct">// ✅ Use injected</span>
     }
 
     public bool Withdraw(decimal amount)
@@ -196,7 +268,7 @@ public class User
         {
             _bankAccount.Deduct(amount);
             decimal newBalance = _bankAccount.GetBalance();
-            _emailService.Send(Email, "Withdrawal", $"Withdrew ${amount}...");
+            <span class="correct">_emailService.Send(Email, "Withdrawal", $"Withdrew ${amount}...");</span>
             return true;
         }
         return false;
@@ -232,7 +304,7 @@ public class BankAccount : IBankAccount
     public decimal GetBalance() => _balance;
 }</code></pre>
 
-        <h2>Phase 2: Property Injection</h2>
+        <h2 id="phase2">Phase 2: Property Injection</h2>
         <p><strong>Score: 41 points</strong></p>
 
         <h3>Understanding Property Injection</h3>
@@ -245,13 +317,16 @@ public class BankAccount : IBankAccount
 
         <h3>Common Mistakes Made</h3>
         <details>
-          <summary>Mistake #6: Code Execution Inside Class (-3 points)</summary>
+          <summary>
+            Mistake #6: Code Execution Inside Class
+            <span class="score-badge penalty">-3 points</span>
+          </summary>
           <pre><code>public class User
 {
     public IEmailService EmailService { get; set; }
     
-    var user = new User(...); // ❌ Can't execute code here!
-    user.EmailService = new EmailService();
+    <span class="error">var user = new User(...);
+    user.EmailService = new EmailService();</span> <span class="comment-error">// ❌ Can't execute code here!</span>
 }</code></pre>
           <p>
             <strong>Lesson:</strong> Execution code goes in methods or Main, not
@@ -260,19 +335,24 @@ public class BankAccount : IBankAccount
         </details>
 
         <details>
-          <summary>Mistake #7: Wrong Variable Name (-2 points)</summary>
-          <pre><code>_emailService.Send(...) // ❌ Field doesn't exist anymore with property injection</code></pre>
+          <summary>
+            Mistake #7: Wrong Variable Name
+            <span class="score-badge penalty">-2 points</span>
+          </summary>
+          <pre><code><span class="error">_emailService.Send(...)</span> <span class="comment-error">// ❌ Field doesn't exist anymore with property injection</span></code></pre>
           <p>
             <strong>Lesson:</strong> Use the property name, not the old field
             name
           </p>
         </details>
 
-        <h3>The Correct Solution (+3 points)</h3>
+        <h3>
+          The Correct Solution <span class="score-badge bonus">+3 points</span>
+        </h3>
         <pre><code>public class User
 {
-    private readonly IBankAccount _bankAccount; // Constructor Injection
-    public IEmailService EmailService { get; set; } // ✅ Property Injection
+    <span class="highlight">private readonly IBankAccount _bankAccount;</span> <span class="comment-correct">// Constructor Injection</span>
+    <span class="correct">public IEmailService EmailService { get; set; }</span> <span class="comment-correct">// ✅ Property Injection</span>
     
     public string Name { get; set; }
     public string Email { get; set; }
@@ -282,12 +362,12 @@ public class BankAccount : IBankAccount
         Name = name;
         Email = email;
         _bankAccount = bankAccount;
-        // EmailService NOT set here - it's optional
+        <span class="comment-correct">// EmailService NOT set here - it's optional</span>
     }
 
     public void SendWelcomeEmail()
     {
-        EmailService?.Send(Email, "Welcome!", ...); // ✅ Null-conditional operator
+        <span class="correct">EmailService?.Send(Email, "Welcome!", ...);</span> <span class="comment-correct">// ✅ Null-conditional operator</span>
     }
 
     public bool Withdraw(decimal amount)
@@ -296,7 +376,7 @@ public class BankAccount : IBankAccount
         {
             _bankAccount.Deduct(amount);
             decimal newBalance = _bankAccount.GetBalance();
-            EmailService?.Send(Email, "Withdrawal", ...); // ✅ Check for null
+            <span class="correct">EmailService?.Send(Email, "Withdrawal", ...);</span> <span class="comment-correct">// ✅ Check for null</span>
             return true;
         }
         return false;
@@ -305,13 +385,13 @@ public class BankAccount : IBankAccount
 
 // Usage:
 var bankAccount = new BankAccount(1000);
-var user = new User("John", "a@g.com", bankAccount)
+<span class="correct">var user = new User("John", "a@g.com", bankAccount)
 {
-    EmailService = new EmailService() // ✅ Set property after construction
-};
+    EmailService = new EmailService()</span> <span class="comment-correct">// ✅ Set property after construction</span>
+<span class="correct">};</span>
 user.SendWelcomeEmail();</code></pre>
 
-        <h2>Phase 3: Method Injection</h2>
+        <h2 id="phase3">Phase 3: Method Injection</h2>
         <p><strong>Score: 42 points</strong></p>
 
         <h3>Understanding Method Injection</h3>
@@ -324,10 +404,13 @@ user.SendWelcomeEmail();</code></pre>
 
         <h3>Common Mistakes Made</h3>
         <details>
-          <summary>Mistake #8: Wrong Responsibility (-3 points)</summary>
+          <summary>
+            Mistake #8: Wrong Responsibility
+            <span class="score-badge penalty">-3 points</span>
+          </summary>
           <pre><code>public interface IBankAccount
 {
-    void Deposit(decimal amount, IEmailService notificationService); // ❌
+    <span class="error">void Deposit(decimal amount, IEmailService notificationService);</span> <span class="comment-error">// ❌</span>
 }
 
 public class BankAccount : IBankAccount
@@ -335,7 +418,7 @@ public class BankAccount : IBankAccount
     public void Deposit(decimal amount, IEmailService notificationService)
     {
         _balance += amount;
-        notificationService.Send(...); // ❌ BankAccount shouldn't know about emails!
+        <span class="error">notificationService.Send(...);</span> <span class="comment-error">// ❌ BankAccount shouldn't know about emails!</span>
     }
 }</code></pre>
           <p>
@@ -345,8 +428,11 @@ public class BankAccount : IBankAccount
         </details>
 
         <details>
-          <summary>Mistake #9: Syntax Error with Types (-2 points)</summary>
-          <pre><code>_bankAccount.Deposit(decimal amount, IEmailService notificationService); // ❌</code></pre>
+          <summary>
+            Mistake #9: Syntax Error with Types
+            <span class="score-badge penalty">-2 points</span>
+          </summary>
+          <pre><code><span class="error">_bankAccount.Deposit(decimal amount, IEmailService notificationService);</span> <span class="comment-error">// ❌</span></code></pre>
           <p>
             <strong>Lesson:</strong> Pass variables, not types. Should be:
             <code>_bankAccount.Deposit(amount)</code>
@@ -354,8 +440,11 @@ public class BankAccount : IBankAccount
         </details>
 
         <details>
-          <summary>Mistake #10: Assigning Void Return (-2 points)</summary>
-          <pre><code>decimal newBalance = _bankAccount.Deposit(amount); // ❌ Deposit returns void!</code></pre>
+          <summary>
+            Mistake #10: Assigning Void Return
+            <span class="score-badge penalty">-2 points</span>
+          </summary>
+          <pre><code><span class="error">decimal newBalance = _bankAccount.Deposit(amount);</span> <span class="comment-error">// ❌ Deposit returns void!</span></code></pre>
           <p>
             <strong>Lesson:</strong> Check return types. Call separately if
             method returns void
@@ -364,22 +453,25 @@ public class BankAccount : IBankAccount
 
         <details>
           <summary>
-            Mistake #11: Missing Interface Parameter (-2 points)
+            Mistake #11: Missing Interface Parameter
+            <span class="score-badge penalty">-2 points</span>
           </summary>
-          <pre><code>void Deposit(); // ❌ Missing the amount parameter</code></pre>
+          <pre><code><span class="error">void Deposit();</span> <span class="comment-error">// ❌ Missing the amount parameter</span></code></pre>
           <p>
             <strong>Lesson:</strong> Interface and implementation signatures
             must match
           </p>
         </details>
 
-        <h3>The Correct Solution (+6 points)</h3>
+        <h3>
+          The Correct Solution <span class="score-badge bonus">+6 points</span>
+        </h3>
         <pre><code>public interface IBankAccount
 {
     bool HasSufficientFunds(decimal amount);
     decimal Deduct(decimal amount);
     decimal GetBalance();
-    void Deposit(decimal amount); // ✅ Simple, focused on money only
+    <span class="correct">void Deposit(decimal amount);</span> <span class="comment-correct">// ✅ Simple, focused on money only</span>
 }
 
 public class BankAccount : IBankAccount
@@ -391,7 +483,7 @@ public class BankAccount : IBankAccount
         _balance = initialBalance;
     }
     
-    public void Deposit(decimal amount) // ✅ Just handles the deposit
+    <span class="correct">public void Deposit(decimal amount)</span> <span class="comment-correct">// ✅ Just handles the deposit</span>
     {
         _balance += amount;
     }
@@ -406,21 +498,21 @@ public class User
     public string Email { get; set; }
     public IEmailService EmailService { get; set; }
 
-    // ✅ Method Injection - dependency passed to specific method
-    public void Deposit(decimal amount, IEmailService notificationService)
+    <span class="comment-correct">// ✅ Method Injection - dependency passed to specific method</span>
+    <span class="correct">public void Deposit(decimal amount, IEmailService notificationService)</span>
     {
-        _bankAccount.Deposit(amount); // Update balance
-        decimal newBalance = _bankAccount.GetBalance(); // Get new balance
-        notificationService.Send(Email, "Deposit Confirmation", 
+        <span class="correct">_bankAccount.Deposit(amount);</span> <span class="comment-correct">// Update balance</span>
+        <span class="correct">decimal newBalance = _bankAccount.GetBalance();</span> <span class="comment-correct">// Get new balance</span>
+        <span class="correct">notificationService.Send(Email, "Deposit Confirmation",</span> 
             $"Hello {Name}, you deposited ${amount}. New balance: ${newBalance}");
     }
 }
 
 // Usage - different email service per call:
-user.Deposit(1000, new EmailService());
-user.Deposit(500, new SmsService()); // ✅ Can use different implementation!</code></pre>
+<span class="correct">user.Deposit(1000, new EmailService());
+user.Deposit(500, new SmsService());</span> <span class="comment-correct">// ✅ Can use different implementation!</span></code></pre>
 
-        <h2>Final Results</h2>
+        <h2 id="final-results">Final Results</h2>
         <h3>Score Summary</h3>
         <ul>
           <li><strong>Starting Points:</strong> 50</li>
@@ -429,10 +521,13 @@ user.Deposit(500, new SmsService()); // ✅ Can use different implementation!</c
             mistakes)
           </li>
           <li><strong>Total Wins:</strong> +12 points</li>
-          <li><strong>Final Score:</strong> 37 points</li>
+          <li>
+            <strong>Final Score:</strong>
+            <span class="score-badge">37 points</span>
+          </li>
         </ul>
 
-        <h3>Key Lessons Learned</h3>
+        <h2 id="key-lessons">Key Lessons Learned</h2>
         <ol>
           <li>
             <strong>Separation of Concerns:</strong> Each class should have one
@@ -463,7 +558,7 @@ user.Deposit(500, new SmsService()); // ✅ Can use different implementation!</c
           </li>
         </ol>
 
-        <h2>Comparison of DI Types</h2>
+        <h2 id="comparison">Comparison of DI Types</h2>
         <table>
           <thead>
             <tr>
@@ -513,7 +608,12 @@ user.Deposit(500, new SmsService()); // ✅ Can use different implementation!</c
           </tbody>
         </table>
 
-        <h2>Complete Final Code</h2>
+        <h2 id="final-code">The Final Solution: Complete Code</h2>
+        <p>
+          This is the <strong>AFTER</strong> state - the refactored code with
+          all three DI types working together:
+        </p>
+
         <pre><code>// Interfaces
 public interface IEmailService
 {
@@ -531,50 +631,50 @@ public interface IBankAccount
 // User Class - Uses all three DI types
 public class User
 {
-    // Constructor Injection - Required
-    private readonly IBankAccount _bankAccount;
+    <span class="comment-correct">// Constructor Injection - Required</span>
+    <span class="correct">private readonly IBankAccount _bankAccount;</span>
     
-    // Property Injection - Optional
-    public IEmailService EmailService { get; set; }
+    <span class="comment-correct">// Property Injection - Optional</span>
+    <span class="correct">public IEmailService EmailService { get; set; }</span>
     
     public string Name { get; set; }
     public string Email { get; set; }
 
-    public User(string name, string email, IBankAccount bankAccount)
+    <span class="correct">public User(string name, string email, IBankAccount bankAccount)</span>
     {
         Name = name;
         Email = email;
-        _bankAccount = bankAccount;
+        <span class="correct">_bankAccount = bankAccount;</span>
     }
 
     public void SendWelcomeEmail()
     {
-        EmailService?.Send(Email, "Welcome!", $"Hello {Name}, welcome to our bank!");
+        <span class="correct">EmailService?.Send(Email, "Welcome!", $"Hello {Name}, welcome to our bank!");</span>
     }
 
     public bool Withdraw(decimal amount)
     {
-        if (_bankAccount.HasSufficientFunds(amount))
+        if (<span class="correct">_bankAccount.HasSufficientFunds(amount)</span>)
         {
-            _bankAccount.Deduct(amount);
-            decimal newBalance = _bankAccount.GetBalance();
-            EmailService?.Send(Email, "Withdrawal Notification", 
+            <span class="correct">_bankAccount.Deduct(amount);</span>
+            decimal newBalance = <span class="correct">_bankAccount.GetBalance();</span>
+            <span class="correct">EmailService?.Send(Email, "Withdrawal Notification",</span> 
                 $"You withdrew ${amount}. New balance: ${newBalance}");
             return true;
         }
         return false;
     }
 
-    // Method Injection - Flexible per-call
-    public void Deposit(decimal amount, IEmailService notificationService)
+    <span class="comment-correct">// Method Injection - Flexible per-call</span>
+    <span class="correct">public void Deposit(decimal amount, IEmailService notificationService)</span>
     {
-        _bankAccount.Deposit(amount);
-        decimal newBalance = _bankAccount.GetBalance();
-        notificationService.Send(Email, "Deposit Confirmation", 
+        <span class="correct">_bankAccount.Deposit(amount);</span>
+        decimal newBalance = <span class="correct">_bankAccount.GetBalance();</span>
+        <span class="correct">notificationService.Send(Email, "Deposit Confirmation",</span> 
             $"Hello {Name}, you deposited ${amount}. New balance: ${newBalance}");
     }
 
-    public decimal GetBalance() => _bankAccount.GetBalance();
+    public decimal GetBalance() => <span class="correct">_bankAccount.GetBalance();</span>
 }
 
 // Implementation Classes
@@ -614,18 +714,18 @@ public class BankAccount : IBankAccount
 // Usage Example
 public static void Main()
 {
-    // Constructor Injection
-    var bankAccount = new BankAccount(1000);
-    var user = new User("John", "a@g.com", bankAccount)
+    <span class="comment-correct">// Constructor Injection</span>
+    var bankAccount = <span class="correct">new BankAccount(1000);</span>
+    var user = <span class="correct">new User("John", "a@g.com", bankAccount)</span>
     {
-        // Property Injection
-        EmailService = new EmailService()
+        <span class="comment-correct">// Property Injection</span>
+        <span class="correct">EmailService = new EmailService()</span>
     };
 
     user.SendWelcomeEmail();
     
-    // Method Injection
-    user.Deposit(1000, new EmailService());
+    <span class="comment-correct">// Method Injection</span>
+    <span class="correct">user.Deposit(1000, new EmailService());</span>
     
     Console.WriteLine("Balance before withdrawal: $" + user.GetBalance());
     bool success = user.Withdraw(200);
@@ -633,7 +733,7 @@ public static void Main()
     Console.WriteLine("Balance after withdrawal: $" + user.GetBalance());
 }</code></pre>
 
-        <h2>Conclusion</h2>
+        <h2 id="conclusion">Conclusion</h2>
         <p>
           Through this gamified learning approach, we transformed
           tightly-coupled code into a flexible, testable, and maintainable
