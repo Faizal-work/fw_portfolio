@@ -3,24 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Learning Dependency Injection Round 2: Task Manager System</title>
+    <title>Dependency Injection: Service Lifetimes Explained</title>
     <link rel="stylesheet" href="../../asset/drew.min.css" />
   </head>
   <body>
     <h1>
-      Learning Dependency Injection Round 2: Task Manager System
+      Dependency Injection: Service Lifetimes Explained
       <small> <span class="date">21-October-2025</span> by Faizal.Work </small>
     </h1>
     <main>
       <article>
         <h2>Introduction</h2>
         <p>
-          This is Round 2 of the gamified Dependency Injection learning journey.
-          After completing the Bank System in Round 1, we tackle a new scenario:
-          a Task Manager application. This round proved that
-          <strong>naming consistency is the silent killer of scores</strong>,
-          with the learner dropping from 52 points to just 3 points primarily
-          due to naming mistakes!
+          Understanding issues caused by incorrect service lifetimes - memory leaks from Singleton services holding DbContext, race conditions from Transient services in multi-threaded scenarios.
         </p>
 
         <h3>Game Rules (Same as Round 1)</h3>
