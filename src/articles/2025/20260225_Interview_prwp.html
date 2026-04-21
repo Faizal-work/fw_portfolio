@@ -1,0 +1,276 @@
+Using Lazy<T>
+    
+public class AppConfiguration
+{
+    public string DatabaseUrl { get; private set; }
+    public string ApiKey { get; private set; }
+
+    private static readonly Lazy<AppConfiguration> _instance = 
+        new Lazy<AppConfiguration>(
+            () => new AppConfiguration(), LazyThreadSafetyMode.ExecutionAndPublication
+        );
+
+    public static AppConfiguration Instance => _instance.Value;
+
+    private AppConfiguration(){
+        DatabaseUrl = GetRequiredSetting("APP_DATABASE");
+        ApiKey = GetRequiredSetting("APP_APIKEY"); 
+    } 
+
+    public static string GetRequiredSetting(string key){
+        return Environment.GetEnvironmentVariable(key) 
+                ?? throw new InvalidOperationException($"Required configuration is missing for {key}")
+    } 
+}
+
+This is using Factory Pattern. I am familiar with this, and love this pattern:
+// ❌ double 'public' keyword
+public public interface INotificationSender 
+
+// ❌ static classes can't implement interfaces
+// ❌ async/await doesn't go on a class, only on methods
+// ❌ Task.SendAsync() doesn't exist — Task is not your sender
+public async static class EmailSend: INotificationSender{
+    await Task.SendAsync("test@g.com","Sending an Email");
+}
+The core confusion: You mixed up where async/await lives. It belongs inside a method, not on a class.
+
+Let's Build It Together Step by Step
+Step 1 — Interface (you had this right):
+csharppublic interface INotificationSender
+{
+    Task SendAsync(string recipient, string message);
+}
+Step 2 — Concrete implementations (async goes on the METHOD):
+csharppublic class EmailSender : INotificationSender
+{
+    public async Task SendAsync(string recipient, string message)
+    {
+        await Task.Delay(100); // simulate sending
+        Console.WriteLine($"[EMAIL] To: {recipient} | {message}");
+    }
+}
+
+public class SmsSender : INotificationSender
+{
+    public async Task SendAsync(string recipient, string message)
+    {
+        await Task.Delay(100);
+        Console.WriteLine($"[SMS] To: {recipient} | {message}");
+    }
+}
+
+public class PushSender : INotificationSender
+{
+    public async Task SendAsync(string recipient, string message)
+    {
+        await Task.Delay(100);
+        Console.WriteLine($"[PUSH] To: {recipient} | {message}");
+    }
+}
+Step 3 — The Factory (OCP-compliant, no modification needed for new channels):
+csharppublic class NotificationFactory
+{
+    private readonly Dictionary<string, INotificationSender> _senders;
+
+    // All senders injected via DI — factory never needs to change
+    public NotificationFactory(IEnumerable<INotificationSender> senders)
+    {
+        _senders = senders.ToDictionary(
+            s => s.GetType().Name.Replace("Sender", "").ToLower()
+        );
+    }
+
+    public INotificationSender GetSender(string channel)
+    {
+        if (!_senders.TryGetValue(channel.ToLower(), out var sender))
+            throw new NotSupportedException($"Channel '{channel}' is not supported.");
+
+        return sender;
+    }
+}
+Step 4 — Adding WhatsApp (zero changes to factory):
+csharppublic class WhatsAppSender : INotificationSender
+{
+    public async Task SendAsync(string recipient, string message)
+    {
+        await Task.Delay(100);
+        Console.WriteLine($"[WHATSAPP] To: {recipient} | {message}");
+    }
+}
+Step 5 — Register in Program.cs:
+csharpbuilder.Services.AddScoped<INotificationSender, EmailSender>();
+builder.Services.AddScoped<INotificationSender, SmsSender>();
+builder.Services.AddScoped<INotificationSender, PushSender>();
+builder.Services.AddScoped<INotificationSender, WhatsAppSender>(); // just add this line
+builder.Services.AddScoped<NotificationFactory>();
+
+Strategy pattern:
+// Attempted
+// Using context
+class Context{
+    private IPaymentStrategy _ipaymentStrategy;
+
+    public Context(){}
+
+    public Context(IPaymentStrategy ipaymentStrategy){
+        _ipaymentStrategy = ipaymentStrategy;
+    }
+
+}
+
+// Payment Interface:
+public interface IPaymentStrategy
+{
+    Task<bool> ProcessAsync(decimal amount, string currency);
+}
+
+class ConcreteStrategyStripe: IPaymentStrategy{
+    public Task ProcessAsync(decimal amount, string currency){
+        // Use Stripe API 
+        Task.Delay(1000);
+        Console.Writeln();
+        return TypedResult.Ok();
+    }
+}
+
+class ConcreteStrategyBillplz: IPaymentStrategy{
+    public Task ProcessAsync(decimal amount, string currency){
+        // Use Billplz API 
+        Task.Delay(1000);
+        Console.Writeln();
+        return TypedResult.Ok();
+    }
+}
+
+class ConcreteStrategyGrabPay: IPaymentStrategy{
+    public Task ProcessAsync(decimal amount, string currency){
+        // Use GrabPay API 
+        Task.Delay(1000);
+        Console.Writeln();
+        return TypedResult.Ok();
+    }
+}
+
+/**
+* Stripe (global), Billplz (Malaysia), or GrabPay 
+*/
+
+class PaymentProcessor{
+    static void Main(string[] args){
+        var context = new Context();
+
+        // if Stripe
+        context.ConcreteStrategyStripe(new ConcreteStrategyStripe);
+        context.ConcreteStrategyBillplz(new ConcreteStrategyBillplz);
+        context.ConcreteStrategGrabpay(new ConcreteStrategyGrabpay;
+    }
+}
+
+// Corrected
+// ✅ Interface — you had this right
+public interface IPaymentStrategy
+{
+    Task<bool> ProcessAsync(decimal amount, string currency);
+}
+
+// ✅ Concrete Strategies — fixed async/await and return type
+public class StripeStrategy : IPaymentStrategy
+{
+    public async Task<bool> ProcessAsync(decimal amount, string currency)
+    {
+        await Task.Delay(100); // simulate Stripe API call
+        Console.WriteLine($"[STRIPE] Charged {amount} {currency}");
+        return true;
+    }
+}
+
+public class BillplzStrategy : IPaymentStrategy
+{
+    public async Task<bool> ProcessAsync(decimal amount, string currency)
+    {
+        await Task.Delay(100); // simulate Billplz API call
+        Console.WriteLine($"[BILLPLZ] Charged {amount} {currency}");
+        return true;
+    }
+}
+
+public class GrabPayStrategy : IPaymentStrategy
+{
+    public async Task<bool> ProcessAsync(decimal amount, string currency)
+    {
+        await Task.Delay(100); // simulate GrabPay API call
+        Console.WriteLine($"[GRABPAY] Charged {amount} {currency}");
+        return true;
+    }
+}
+
+// ✅ Context class — YOUR idea, fixed
+public class PaymentContext
+{
+    private IPaymentStrategy _strategy;
+
+    public PaymentContext(IPaymentStrategy strategy)
+    {
+        _strategy = strategy; // ✅ correct assignment direction
+    }
+
+    // ✅ This is how you SWAP strategy at runtime
+    public void SetStrategy(IPaymentStrategy strategy)
+    {
+        _strategy = strategy;
+    }
+
+    public async Task<bool> ExecutePayment(decimal amount, string currency)
+    {
+        return await _strategy.ProcessAsync(amount, currency);
+    }
+}
+
+// ✅ PaymentProcessor — demonstrates runtime switching
+public class PaymentProcessor
+{
+    public static async Task Main(string[] args)
+    {
+        // Malaysian user — use Billplz
+        var context = new PaymentContext(new BillplzStrategy());
+        await context.ExecutePayment(50.00m, "MYR");
+
+        // User switches to GrabPay
+        context.SetStrategy(new GrabPayStrategy());
+        await context.ExecutePayment(50.00m, "MYR");
+
+        // International user — use Stripe
+        context.SetStrategy(new StripeStrategy());
+        await context.ExecutePayment(20.00m, "USD");
+    }
+}
+```
+
+---
+
+### The One Key Mental Fix 🧠
+```
+// ❌ Your thinking:
+context.ConcreteStrategyStripe(...)  // strategy name IS the method
+
+// ✅ Correct thinking:
+context.SetStrategy(new StripeStrategy())  // ONE method, swap what's inside
+context.ExecutePayment(...)                // ONE method to run it
+```
+
+The whole point of Strategy is that `PaymentContext` **never knows or cares** which strategy is inside it. It just calls `ExecutePayment()` and the strategy does its job.
+
+---
+
+### Score: 5.5/10 ⭐
+Solid structural thinking, right pattern instinct. Broke down on syntax and async. **The direction is right — the details need tightening.**
+
+---
+
+### 🔑 3 Things to Memorise Before Tomorrow
+```
+1. Assignment:   _field = parameter  (NOT parameter = _field)
+2. Async return: async Task<bool>    (NOT just Task)
+3. Strategy swap: ONE SetStrategy()  (NOT method per strategy)
+
