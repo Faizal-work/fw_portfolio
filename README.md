@@ -1,64 +1,63 @@
-# 2025-10-19
+# The Relearning
+*A senior developer's blog and learning milestones*
 
-Templating using DrewDevault and created first article dodumenting my progress
+I'm a senior engineer who has spent years building by doing — shipping with a working-level understanding of the patterns underneath. I've watched peers who took the time to truly master those patterns break through a ceiling I haven't crossed yet. So this is me slowing down. This blog is where I relearn and readapt the foundations — not to catch up, but to finally stand where they stand, and break my own ceiling.
 
-# 2025-08-31
+---
 
-Followed a new tutorial to figure out what is lacking
+## Changelog
 
-# 2025-08-29
+### 2025-10-19
+Set up the site templating following Drew DeVault's approach, and published the first article documenting progress. The pipeline from idea → post is now real.
 
-Updating the codes for a better polished look by following a proper tutorial
+### 2025-08-31
+Worked through a new tutorial to sharpen my fundamentals and identify the next things worth learning.
 
-# 2025-08-26
+### 2025-08-29
+Polished the codebase, using a proper tutorial as the reference point. Cleaner structure, clearer intent.
 
-Updated pipeline to create PR after success in development
+### 2025-08-26
+Pipeline now automatically opens a PR after a successful development build. Small win, but a satisfying one.
 
-# 2025-08-25
+### 2025-08-25
+First page deployed successfully. The thing exists on the internet.
 
-First page has been successfully deployed
+---
 
-# Hello World!
+## What I'm covering
 
-This is my newest-and-soon-to-be-consolidated git. Will decommission the others
+These are the areas I'm actively deepening my understanding in:
 
-Important things to cover:
+1. **OOP** — the foundation everything else sits on
+2. **SOLID principles** — practical understanding and real application in C++, JavaScript, and PHP
+3. **PHP and Laravel** — legitimately good tools, and I'll defend that choice
+4. **Azure Functions vs App Service** — knowing which to reach for and why
+5. **Serverless architectures**
+6. **Docker** and containerization
+7. **SQL and NoSQL** — and when each is the right call
+8. **Scaling** — patterns, tradeoffs, and what actually matters in practice
 
-1. OOP
-2. SOLID ( like proper understanding and workings in C++, Javascript, PHP )
-3. Yes, PHP and Laravel. They're good tools
-4. Azure Function vs AppService
-5. Serverless
-6. Dockers
-7. NoSQL + SQL
-8. Scaling and what not
+---
 
-# Important things to cover
+## Scalability Reference Notes
 
-As per from the Claude.ai on estimation for number of request:
+Baseline numbers I keep around for system design discussions. *(Estimates surfaced with help from Claude — useful as orders of magnitude, not absolutes.)*
 
-## Web Applications:
+### Web Applications
+- Single server: ~1,000–5,000 concurrent users
+- Load-balanced setup: ~10,000–50,000 concurrent users
+- Well-architected system: 100,000+ concurrent users
 
-- Single server: ~1,000-5,000 concurrent users
-- Load-balanced setup: ~10,000-50,000 concurrent users
-- Well-architected system: ~100,000+ concurrent users
-
-## Database:
-
-- Single MySQL/PostgreSQL: ~10,000 reads/sec, ~1,000 writes/sec
+### Databases
+- Single MySQL / PostgreSQL: ~10,000 reads/sec, ~1,000 writes/sec
 - Properly indexed and optimized: ~50,000 reads/sec, ~5,000 writes/sec
 
-## General Request Handling:
+### Request Handling
+- Simple API endpoint: ~1,000–10,000 req/sec per server
+- Complex business logic: ~100–1,000 req/sec per server
 
-- Simple API endpoint: ~1,000-10,000 req/sec per server
-- Complex business logic: ~100-1,000 req/sec per server
-
-## What interviewers want to hear
-
-You understand that scalability isn't just about bigger servers
-
-You know common bottlenecks (database, memory, I/O)
-
-You can discuss architectural patterns (caching, load balancing, microservices)
-
-You recognize that "it depends" on the specific requirements
+### What Actually Matters in a System Design Conversation
+- Scalability isn't just "bigger servers" — it's architecture
+- Know the usual suspects for bottlenecks: database, memory, I/O
+- Be fluent in the patterns: caching, load balancing, microservices
+- "It depends" is a real answer — the tradeoffs are the whole point
