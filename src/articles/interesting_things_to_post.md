@@ -755,4 +755,20 @@ if (lowerBound >= upperBound)
 
 Stack → value types (int, bool, struct) and local variables
 Heap → class instances created with new
+<<<<<<< HEAD
 The variable sits on the stack, but it holds a reference (pointer) to the actual object living on the heap. That's why classes are called reference types.
+
+# Immediately Invoked Function Expression: (()=>{})()
+
+Link: https://developer.mozilla.org/en-US/docs/Glossary/IIFE
+
+It's not used as much as it was before since starting from around 2015 we have proper module systems, and let and const was introduced.
+
+The old keyword used to create variables (var) did not have proper block scoping. If it was used outside of a function, the variable became global, so if I defined a variable as var foo = 2;, then that became accessible from completely unrelated, separate js files as well, and could be overwritten.
+
+However, when var was used in a function, it didn't become global, it stayed within the function. So to make sure we didn't pollute the global scope, we used to automatically wrap all js files into a function that's called immediately.
+
+Today, const and let have proper block scoping, like you'd expect, and top level variables stay scoped to the module as well.
+=======
+The variable sits on the stack, but it holds a reference (pointer) to the actual object living on the heap. That's why classes are called reference types.
+>>>>>>> 8f4c10d (Updated names for professional look (#70))
