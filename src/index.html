@@ -15,10 +15,8 @@
     <section class="article-list">
       <h1>Faizal.Work | Building & Learning</h1>
 
-      <!-- Article writing -->
-      <div class="article">
-        
-      </div>
+      <!-- Article writing; making it dynamic -->
+      <div id="articles"></div>
     </section>
 
     <aside>
@@ -31,4 +29,13 @@
       </div>
     </aside>
   </main>
+
+  <!-- Article script-->
+   <script src="./articles/articles.js"></script>
+   <script>
+      document.getElementById('articles').innerHTML = articles.map(a=>`<div class="article">
+      <span class="date">${a.date}</span>
+      <a href="${a.url}">${a.title}</a>
+    </div>`).join('');
+    </script>
 </html>
